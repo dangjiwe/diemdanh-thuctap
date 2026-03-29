@@ -6,11 +6,30 @@
     <title>Điểm danh Thực tập</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #camera-stream { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; display: none; margin: 10px auto; }
+        
+        /* Cấu hình khung chứa video và ảnh xem trước cho đều nhau */
+        #camera-stream, #preview-canvas { 
+            width: 100%; 
+            max-width: 400px; 
+            border-radius: 8px; 
+            border: 2px solid #ccc; 
+            margin: 10px auto; 
+        }
+        #camera-stream { display: none; } /* Ẩn lúc mới vào */
+        #preview-canvas { display: none; } /* Ẩn lúc chưa chụp */
+
         input, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
-        button { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
+        
+        /* Màu sắc các nút cho xịn sò */
+        .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; display: none; }
+        .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        #capture-btn { background-color: #008CBA; display: none; }
+        
+        /* Cụm nút xem trước (Chụp lại & Gửi) */
+        #review-controls { display: none; margin-top: 10px; }
+        #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
+
         #loading { display: none; color: blue; font-weight: bold; margin-top: 10px;}
     </style>
 </head>
@@ -18,96 +37,132 @@
 
     <h2>Điểm danh Thực tập</h2>
     
-    <input type="text" id="mssv" placeholder="Nhập Họ và tên của bạn" required>
+    <input type="text" id="hoTen" placeholder="Nhập Họ và Tên của bạn" required>
     <br><br>
     
-    <button id="start-camera-btn">📷 Bật Camera</button>
+    <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
 
     <video id="camera-stream" autoplay playsinline></video>
+    
+    <canvas id="preview-canvas"></canvas>
     <br>
     
-    <button id="capture-btn">📸 Chụp ảnh & Gửi Điểm danh</button>
-    
-    <div id="loading">⏳ Đang gửi dữ liệu, vui lòng đợi...</div>
+    <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
 
-    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="review-controls">
+        <button id="retake-btn" class="btn-warning">🔄 Chụp lại</button>
+        <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
+    </div>
+    
+    <div id="loading">⏳ Đang xử lý, vui lòng đợi...</div>
 
     <script>
         const video = document.getElementById('camera-stream');
-        const canvas = document.getElementById('canvas');
+        const canvas = document.getElementById('preview-canvas');
         const startCameraBtn = document.getElementById('start-camera-btn');
         const captureBtn = document.getElementById('capture-btn');
-        const mssvInput = document.getElementById('mssv');
+        const reviewControls = document.getElementById('review-controls');
+        const retakeBtn = document.getElementById('retake-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const hoTenInput = document.getElementById('hoTen');
         const loadingDiv = document.getElementById('loading');
 
-        // URL Web App của Google Apps Script
+        let currentImageData = null; // Biến lưu tạm bức ảnh vừa chụp
+
+        // URL Web App của Google Apps Script (GIỮ NGUYÊN LINK CỦA BẠN NHÉ)
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
 
-        // SỰ KIỆN 1: Bấm nút Bật camera (Vượt rào bảo mật của trình duyệt)
+        // 1. BẤM BẬT CAMERA
         startCameraBtn.addEventListener('click', function() {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
                 .then(stream => {
-                    video.style.display = 'block'; // Hiện khung video
+                    video.style.display = 'block'; 
                     video.srcObject = stream;
                     
-                    // Ẩn nút Bật camera, hiện nút Chụp ảnh
                     startCameraBtn.style.display = 'none';
                     captureBtn.style.display = 'inline-block';
 
-                    video.onloadedmetadata = () => {
-                        video.play();
-                    };
+                    video.onloadedmetadata = () => { video.play(); };
                 })
                 .catch(err => {
-                    alert("Không thể bật camera! Vui lòng kiểm tra xem bạn đã cấp quyền cho trình duyệt chưa. Lỗi: " + err.name);
+                    alert("Không thể bật camera! Vui lòng cấp quyền cho trình duyệt.");
                 });
         });
 
-        // SỰ KIỆN 2: Bấm nút Chụp & Gửi
+        // 2. BẤM CHỤP ẢNH
         captureBtn.addEventListener('click', function() {
-            const mssv = mssvInput.value.trim();
-            if (!mssv) {
-                alert("Vui lòng nhập Họ và tên trước khi chụp ảnh!");
-                return;
-            }
-
             const context = canvas.getContext('2d');
             const vWidth = video.videoWidth || 640;
             const vHeight = video.videoHeight || 480;
 
+            // Đặt kích thước ảnh bằng kích thước video
             canvas.width = vWidth;
             canvas.height = vHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/jpeg', 0.7);
             
-            if (!imageData || imageData.length < 1000) {
+            // Chụp khung hình đưa lên canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Lấy dữ liệu ảnh
+            currentImageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            if (!currentImageData || currentImageData.length < 1000) {
                 alert("Lỗi: Không lấy được khung hình. Hãy thử lại!");
                 return;
             }
 
+            // Chuyển giao diện sang chế độ XEM TRƯỚC
+            video.style.display = 'none';          // Ẩn luồng camera
+            captureBtn.style.display = 'none';     // Ẩn nút chụp
+            canvas.style.display = 'block';        // Hiện ảnh vừa chụp
+            reviewControls.style.display = 'block';// Hiện 2 nút Chụp lại / Gửi
+        });
+
+        // 3. BẤM CHỤP LẠI (Hủy ảnh cũ, bật lại camera)
+        retakeBtn.addEventListener('click', function() {
+            currentImageData = null; // Xóa ảnh tạm
+            
+            canvas.style.display = 'none';         // Ẩn ảnh xem trước
+            reviewControls.style.display = 'none'; // Ẩn 2 nút
+            video.style.display = 'block';         // Mở lại luồng camera
+            captureBtn.style.display = 'inline-block'; // Mở lại nút chụp
+        });
+
+        // 4. BẤM GỬI ĐIỂM DANH (Đã chốt ảnh)
+        submitBtn.addEventListener('click', function() {
+            const hoTen = hoTenInput.value.trim();
+            if (!hoTen) {
+                alert("Vui lòng nhập Họ Tên trước khi gửi!");
+                return;
+            }
+
             loadingDiv.style.display = 'block';
-            captureBtn.disabled = true;
+            retakeBtn.disabled = true;
+            submitBtn.disabled = true;
 
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                body: JSON.stringify({ mssv: mssv, image: imageData })
+                body: JSON.stringify({ hoTen: hoTen, image: currentImageData })
             })
             .then(response => response.json())
             .then(result => {
                 loadingDiv.style.display = 'none';
-                captureBtn.disabled = false;
+                retakeBtn.disabled = false;
+                submitBtn.disabled = false;
                 
                 if(result.status === 'success') {
                     alert('Điểm danh thành công!');
-                    mssvInput.value = ''; 
+                    hoTenInput.value = ''; 
+                    // Reset lại toàn bộ giao diện về trạng thái chờ chụp người tiếp theo
+                    retakeBtn.click(); 
                 } else {
-                    alert('Có lỗi từ máy chủ: ' + result.message);
+                    alert('Lỗi: ' + result.message);
                 }
             })
             .catch(error => {
                 loadingDiv.style.display = 'none';
-                captureBtn.disabled = false;
+                retakeBtn.disabled = false;
+                submitBtn.disabled = false;
                 alert('Lỗi kết nối mạng. Hãy thử lại!');
             });
         });
