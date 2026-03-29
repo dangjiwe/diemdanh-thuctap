@@ -4,64 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Điểm danh Thực tập</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        
-        #camera-stream, #preview-canvas { 
-            width: 100%; 
-            max-width: 400px; 
-            border-radius: 8px; 
-            border: 2px solid #ccc; 
-            margin: 10px auto; 
-        }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
+        #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; }
         #camera-stream { display: none; }
         #preview-canvas { display: none; }
-
-        input, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
-        
+        select, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #ff9800; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        
-        /* Cụm nút khi đang bật camera (Đổi Cam & Chụp) */
-        #active-camera-controls { display: none; margin-top: 10px; }
-        #active-camera-controls button { width: 48%; display: inline-block; margin: 0 1%; }
-
-        /* Cụm nút xem trước (Chụp lại & Gửi) */
-        #review-controls { display: none; margin-top: 10px; }
-        #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
-
+        #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
+        #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
         #loading { display: none; color: blue; font-weight: bold; margin-top: 10px;}
     </style>
 </head>
 <body>
 
-    <h2>Điểm danh Thực tập</h2>
+    <h2>Hệ thống Điểm danh</h2>
     
-    <input type="text" id="hoTen" placeholder="Nhập Họ và Tên của bạn" required>
+    <select id="hoTen">
+        <option value="">-- Chọn tên của bạn --</option>
+        <option value="Lê Nguyễn Ngọc Yến">Lê Nguyễn Ngọc Yến</option>
+        <option value="Võ Thị Ngọc Huyền">Võ Thị Ngọc Huyền</option>
+        <option value="Ngô Nhật Hào">Ngô Nhật Hào</option>
+        <option value="Nguyễn Như Ngọc">Nguyễn Như Ngọc</option>
+        <option value="Nguyễn Quốc Thái">Nguyễn Quốc Thái</option>
+        <option value="Lê Thị Thu Nguyệt">Lê Thị Thu Nguyệt</option>
+        <option value="Phạm Văn Đăng">Phạm Văn Đăng</option>
+        <option value="Bùi Thị Hồng Dung">Bùi Thị Hồng Dung</option>
+        <option value="Ngô Trần Duy Khang">Ngô Trần Duy Khang</option>
+        <option value="Phạm Như Quỳnh">Phạm Như Quỳnh</option>
+        <option value="Mai Hữu Thiện">Mai Hữu Thiện</option>
+        <option value="Phan Huỳnh Công Danh">Phan Huỳnh Công Danh</option>
+        <option value="Lê Huỳnh Giao">Lê Huỳnh Giao</option>
+        <option value="Dương Khai Kiệt">Dương Khai Kiệt</option>
+        <option value="Võ Nguyễn Đạt Sơn">Võ Nguyễn Đạt Sơn</option>
+        <option value="Nguyễn Khánh Duy">Nguyễn Khánh Duy</option>
+        <option value="Ngô Gia Hân">Ngô Gia Hân</option>
+        <option value="Nguyễn Võ Hoàng Phúc">Nguyễn Võ Hoàng Phúc</option>
+        <option value="Lê Quốc Việt">Lê Quốc Việt</option>
+        <option value="Tăng Khánh Vân">Tăng Khánh Vân</option>
+        <option value="Nguyễn Hoàng Bảo Duy">Nguyễn Hoàng Bảo Duy</option>
+        <option value="Võ Nguyễn Minh Thư">Võ Nguyễn Minh Thư</option>
+        <option value="Nguyễn Thị Ngọc Trinh">Nguyễn Thị Ngọc Trinh</option>
+        <option value="Lương Thị Huỳnh Trâm">Lương Thị Huỳnh Trâm</option>
+        <option value="Trịnh Gia Hiếu">Trịnh Gia Hiếu</option>
+        <option value="Huỳnh Lê Kim Ngân">Huỳnh Lê Kim Ngân</option>
+        <option value="Thái Thanh Nhanh">Thái Thanh Nhanh</option>
+        <option value="Lê Hồng Son">Lê Hồng Son</option>
+        <option value="Hồ Trần Ngọc Hạ">Hồ Trần Ngọc Hạ</option>
+        <option value="Nguyễn Kim Nhựt">Nguyễn Kim Nhựt</option>
+        <option value="Nguyễn Thị Hoàng Trinh">Nguyễn Thị Hoàng Trinh</option>
+        <option value="Nguyễn Thành Trung">Nguyễn Thành Trung</option>
+        <option value="Lê Thị Như Ý">Lê Thị Như Ý</option>
+    </select>
     <br><br>
     
     <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
-
     <video id="camera-stream" autoplay playsinline></video>
     <canvas id="preview-canvas"></canvas>
-    <br>
     
     <div id="active-camera-controls">
-        <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Camera</button>
+        <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button>
         <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
     </div>
 
     <div id="review-controls">
         <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
-        <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
+        <button id="submit-btn" class="btn-primary">✅ Gửi đi</button>
     </div>
     
-    <div id="loading">⏳ Đang xử lý, vui lòng đợi...</div>
+    <div id="loading">⏳ Đang xử lý...</div>
 
     <script>
+        // Đăng ký Service Worker cho PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
         const video = document.getElementById('camera-stream');
         const canvas = document.getElementById('preview-canvas');
         const startCameraBtn = document.getElementById('start-camera-btn');
@@ -71,133 +96,71 @@
         const reviewControls = document.getElementById('review-controls');
         const retakeBtn = document.getElementById('retake-btn');
         const submitBtn = document.getElementById('submit-btn');
-        const hoTenInput = document.getElementById('hoTen');
+        const hoTenSelect = document.getElementById('hoTen');
         const loadingDiv = document.getElementById('loading');
 
         let currentImageData = null;
-        let currentStream = null; // Biến lưu trữ luồng camera hiện tại để tắt đi khi đổi cam
-        let useFrontCamera = false; // Mặc định dùng cam sau (false)
-
-        // URL Web App của Google Apps Script
+        let currentStream = null;
+        let useFrontCamera = false;
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
 
-        // Hàm khởi tạo camera (Dùng chung cho lúc Bật và lúc Đổi)
         function initCamera() {
-            // Nếu đang có camera chạy thì phải tắt nó đi trước
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-
-            // user = cam trước, environment = cam sau
-            const constraints = {
-                video: { facingMode: (useFrontCamera ? "user" : "environment") },
-                audio: false
-            };
-
+            if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+            const constraints = { video: { facingMode: (useFrontCamera ? "user" : "environment") }, audio: false };
             navigator.mediaDevices.getUserMedia(constraints)
                 .then(stream => {
                     currentStream = stream;
                     video.style.display = 'block'; 
                     video.srcObject = stream;
-                    
                     startCameraBtn.style.display = 'none';
-                    activeCameraControls.style.display = 'block'; // Hiện cụm nút Đổi Cam & Chụp
-
+                    activeCameraControls.style.display = 'block';
                     video.onloadedmetadata = () => { video.play(); };
                 })
-                .catch(err => {
-                    alert("Không thể bật camera! Vui lòng cấp quyền cho trình duyệt.");
-                });
+                .catch(err => alert("Lỗi camera: " + err));
         }
 
-        // 1. BẤM BẬT CAMERA
         startCameraBtn.addEventListener('click', initCamera);
+        switchCameraBtn.addEventListener('click', () => { useFrontCamera = !useFrontCamera; initCamera(); });
 
-        // 2. BẤM ĐỔI CAMERA
-        switchCameraBtn.addEventListener('click', function() {
-            useFrontCamera = !useFrontCamera; // Đảo ngược trạng thái cam trước/sau
-            initCamera(); // Gọi lại hàm bật camera
-        });
-
-        // 3. BẤM CHỤP ẢNH
-        captureBtn.addEventListener('click', function() {
+        captureBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
-            const vWidth = video.videoWidth || 640;
-            const vHeight = video.videoHeight || 480;
-
-            canvas.width = vWidth;
-            canvas.height = vHeight;
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Lấy ảnh và lật ngược lại nếu đang dùng cam trước (như soi gương)
             if(useFrontCamera) {
                 context.translate(canvas.width, 0);
                 context.scale(-1, 1);
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
             }
-            
             currentImageData = canvas.toDataURL('image/jpeg', 0.8);
-            
-            if (!currentImageData || currentImageData.length < 1000) {
-                alert("Lỗi: Không lấy được khung hình. Hãy thử lại!");
-                return;
-            }
-
-            video.style.display = 'none';          
-            activeCameraControls.style.display = 'none'; // Ẩn nút chụp & đổi cam
-            
-            canvas.style.display = 'block';        
-            reviewControls.style.display = 'block';// Hiện nút Chụp lại & Gửi
+            video.style.display = 'none'; activeCameraControls.style.display = 'none';
+            canvas.style.display = 'block'; reviewControls.style.display = 'block';
         });
 
-        // 4. BẤM CHỤP LẠI
-        retakeBtn.addEventListener('click', function() {
-            currentImageData = null; 
-            
-            canvas.style.display = 'none';         
-            reviewControls.style.display = 'none'; 
-            
-            video.style.display = 'block';         
-            activeCameraControls.style.display = 'block'; // Hiện lại nút chụp & đổi cam
+        retakeBtn.addEventListener('click', () => {
+            currentImageData = null; canvas.style.display = 'none';
+            reviewControls.style.display = 'none'; video.style.display = 'block';
+            activeCameraControls.style.display = 'block';
         });
 
-        // 5. BẤM GỬI ĐIỂM DANH
-        submitBtn.addEventListener('click', function() {
-            const hoTen = hoTenInput.value.trim();
-            if (!hoTen) {
-                alert("Vui lòng nhập Họ Tên trước khi gửi!");
-                return;
-            }
-
+        submitBtn.addEventListener('click', () => {
+            const hoTen = hoTenSelect.value;
+            if (!hoTen) { alert("Vui lòng chọn tên!"); return; }
             loadingDiv.style.display = 'block';
-            retakeBtn.disabled = true;
             submitBtn.disabled = true;
-
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                 body: JSON.stringify({ hoTen: hoTen, image: currentImageData })
             })
-            .then(response => response.json())
-            .then(result => {
-                loadingDiv.style.display = 'none';
-                retakeBtn.disabled = false;
-                submitBtn.disabled = false;
-                
-                if(result.status === 'success') {
+            .then(r => r.json()).then(res => {
+                loadingDiv.style.display = 'none'; submitBtn.disabled = false;
+                if(res.status === 'success') {
                     alert('Điểm danh thành công!');
-                    hoTenInput.value = ''; 
-                    retakeBtn.click(); // Quay lại màn hình camera
-                } else {
-                    alert('Lỗi: ' + result.message);
-                }
-            })
-            .catch(error => {
-                loadingDiv.style.display = 'none';
-                retakeBtn.disabled = false;
-                submitBtn.disabled = false;
-                alert('Lỗi kết nối mạng. Hãy thử lại!');
-            });
+                    hoTenSelect.selectedIndex = 0;
+                    retakeBtn.click();
+                } else { alert('Lỗi: ' + res.message); }
+            }).catch(() => { alert('Lỗi kết nối!'); loadingDiv.style.display = 'none'; submitBtn.disabled = false; });
         });
     </script>
 </body>
