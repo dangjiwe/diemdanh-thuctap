@@ -7,7 +7,6 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         
-        /* Cấu hình khung chứa video và ảnh xem trước cho đều nhau */
         #camera-stream, #preview-canvas { 
             width: 100%; 
             max-width: 400px; 
@@ -15,17 +14,21 @@
             border: 2px solid #ccc; 
             margin: 10px auto; 
         }
-        #camera-stream { display: none; } /* Ẩn lúc mới vào */
-        #preview-canvas { display: none; } /* Ẩn lúc chưa chụp */
+        #camera-stream { display: none; }
+        #preview-canvas { display: none; }
 
         input, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
         
-        /* Màu sắc các nút cho xịn sò */
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
-        .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; display: none; }
+        .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-secondary { background-color: #ff9800; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { background-color: #cccccc; cursor: not-allowed; }
         
+        /* Cụm nút khi đang bật camera (Đổi Cam & Chụp) */
+        #active-camera-controls { display: none; margin-top: 10px; }
+        #active-camera-controls button { width: 48%; display: inline-block; margin: 0 1%; }
+
         /* Cụm nút xem trước (Chụp lại & Gửi) */
         #review-controls { display: none; margin-top: 10px; }
         #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
@@ -43,14 +46,16 @@
     <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
 
     <video id="camera-stream" autoplay playsinline></video>
-    
     <canvas id="preview-canvas"></canvas>
     <br>
     
-    <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+    <div id="active-camera-controls">
+        <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Camera</button>
+        <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+    </div>
 
     <div id="review-controls">
-        <button id="retake-btn" class="btn-warning">🔄 Chụp lại</button>
+        <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
         <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
     </div>
     
@@ -60,6 +65,8 @@
         const video = document.getElementById('camera-stream');
         const canvas = document.getElementById('preview-canvas');
         const startCameraBtn = document.getElementById('start-camera-btn');
+        const activeCameraControls = document.getElementById('active-camera-controls');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
         const captureBtn = document.getElementById('capture-btn');
         const reviewControls = document.getElementById('review-controls');
         const retakeBtn = document.getElementById('retake-btn');
@@ -67,42 +74,68 @@
         const hoTenInput = document.getElementById('hoTen');
         const loadingDiv = document.getElementById('loading');
 
-        let currentImageData = null; // Biến lưu tạm bức ảnh vừa chụp
+        let currentImageData = null;
+        let currentStream = null; // Biến lưu trữ luồng camera hiện tại để tắt đi khi đổi cam
+        let useFrontCamera = false; // Mặc định dùng cam sau (false)
 
-        // URL Web App của Google Apps Script (GIỮ NGUYÊN LINK CỦA BẠN NHÉ)
+        // URL Web App của Google Apps Script
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
 
-        // 1. BẤM BẬT CAMERA
-        startCameraBtn.addEventListener('click', function() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+        // Hàm khởi tạo camera (Dùng chung cho lúc Bật và lúc Đổi)
+        function initCamera() {
+            // Nếu đang có camera chạy thì phải tắt nó đi trước
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            // user = cam trước, environment = cam sau
+            const constraints = {
+                video: { facingMode: (useFrontCamera ? "user" : "environment") },
+                audio: false
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
                 .then(stream => {
+                    currentStream = stream;
                     video.style.display = 'block'; 
                     video.srcObject = stream;
                     
                     startCameraBtn.style.display = 'none';
-                    captureBtn.style.display = 'inline-block';
+                    activeCameraControls.style.display = 'block'; // Hiện cụm nút Đổi Cam & Chụp
 
                     video.onloadedmetadata = () => { video.play(); };
                 })
                 .catch(err => {
                     alert("Không thể bật camera! Vui lòng cấp quyền cho trình duyệt.");
                 });
+        }
+
+        // 1. BẤM BẬT CAMERA
+        startCameraBtn.addEventListener('click', initCamera);
+
+        // 2. BẤM ĐỔI CAMERA
+        switchCameraBtn.addEventListener('click', function() {
+            useFrontCamera = !useFrontCamera; // Đảo ngược trạng thái cam trước/sau
+            initCamera(); // Gọi lại hàm bật camera
         });
 
-        // 2. BẤM CHỤP ẢNH
+        // 3. BẤM CHỤP ẢNH
         captureBtn.addEventListener('click', function() {
             const context = canvas.getContext('2d');
             const vWidth = video.videoWidth || 640;
             const vHeight = video.videoHeight || 480;
 
-            // Đặt kích thước ảnh bằng kích thước video
             canvas.width = vWidth;
             canvas.height = vHeight;
-            
-            // Chụp khung hình đưa lên canvas
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // Lấy dữ liệu ảnh
+            // Lấy ảnh và lật ngược lại nếu đang dùng cam trước (như soi gương)
+            if(useFrontCamera) {
+                context.translate(canvas.width, 0);
+                context.scale(-1, 1);
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            }
+            
             currentImageData = canvas.toDataURL('image/jpeg', 0.8);
             
             if (!currentImageData || currentImageData.length < 1000) {
@@ -110,24 +143,25 @@
                 return;
             }
 
-            // Chuyển giao diện sang chế độ XEM TRƯỚC
-            video.style.display = 'none';          // Ẩn luồng camera
-            captureBtn.style.display = 'none';     // Ẩn nút chụp
-            canvas.style.display = 'block';        // Hiện ảnh vừa chụp
-            reviewControls.style.display = 'block';// Hiện 2 nút Chụp lại / Gửi
-        });
-
-        // 3. BẤM CHỤP LẠI (Hủy ảnh cũ, bật lại camera)
-        retakeBtn.addEventListener('click', function() {
-            currentImageData = null; // Xóa ảnh tạm
+            video.style.display = 'none';          
+            activeCameraControls.style.display = 'none'; // Ẩn nút chụp & đổi cam
             
-            canvas.style.display = 'none';         // Ẩn ảnh xem trước
-            reviewControls.style.display = 'none'; // Ẩn 2 nút
-            video.style.display = 'block';         // Mở lại luồng camera
-            captureBtn.style.display = 'inline-block'; // Mở lại nút chụp
+            canvas.style.display = 'block';        
+            reviewControls.style.display = 'block';// Hiện nút Chụp lại & Gửi
         });
 
-        // 4. BẤM GỬI ĐIỂM DANH (Đã chốt ảnh)
+        // 4. BẤM CHỤP LẠI
+        retakeBtn.addEventListener('click', function() {
+            currentImageData = null; 
+            
+            canvas.style.display = 'none';         
+            reviewControls.style.display = 'none'; 
+            
+            video.style.display = 'block';         
+            activeCameraControls.style.display = 'block'; // Hiện lại nút chụp & đổi cam
+        });
+
+        // 5. BẤM GỬI ĐIỂM DANH
         submitBtn.addEventListener('click', function() {
             const hoTen = hoTenInput.value.trim();
             if (!hoTen) {
@@ -153,8 +187,7 @@
                 if(result.status === 'success') {
                     alert('Điểm danh thành công!');
                     hoTenInput.value = ''; 
-                    // Reset lại toàn bộ giao diện về trạng thái chờ chụp người tiếp theo
-                    retakeBtn.click(); 
+                    retakeBtn.click(); // Quay lại màn hình camera
                 } else {
                     alert('Lỗi: ' + result.message);
                 }
