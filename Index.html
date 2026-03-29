@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điểm danh Thực tập</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #camera-stream { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; display: none; margin: 10px auto; }
+        input, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
+        button { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #capture-btn { background-color: #008CBA; display: none; }
+        #loading { display: none; color: blue; font-weight: bold; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+    <h2>Điểm danh Thực tập</h2>
+    
+    <input type="text" id="mssv" placeholder="Nhập Mã Sinh Viên của bạn" required>
+    <br><br>
+    
+    <button id="start-camera-btn">📷 Bật Camera</button>
+
+    <video id="camera-stream" autoplay playsinline></video>
+    <br>
+    
+    <button id="capture-btn">📸 Chụp ảnh & Gửi Điểm danh</button>
+    
+    <div id="loading">⏳ Đang gửi dữ liệu, vui lòng đợi...</div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('camera-stream');
+        const canvas = document.getElementById('canvas');
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const mssvInput = document.getElementById('mssv');
+        const loadingDiv = document.getElementById('loading');
+
+        // URL Web App của Google Apps Script
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
+
+        // SỰ KIỆN 1: Bấm nút Bật camera (Vượt rào bảo mật của trình duyệt)
+        startCameraBtn.addEventListener('click', function() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+                .then(stream => {
+                    video.style.display = 'block'; // Hiện khung video
+                    video.srcObject = stream;
+                    
+                    // Ẩn nút Bật camera, hiện nút Chụp ảnh
+                    startCameraBtn.style.display = 'none';
+                    captureBtn.style.display = 'inline-block';
+
+                    video.onloadedmetadata = () => {
+                        video.play();
+                    };
+                })
+                .catch(err => {
+                    alert("Không thể bật camera! Vui lòng kiểm tra xem bạn đã cấp quyền cho trình duyệt chưa. Lỗi: " + err.name);
+                });
+        });
+
+        // SỰ KIỆN 2: Bấm nút Chụp & Gửi
+        captureBtn.addEventListener('click', function() {
+            const mssv = mssvInput.value.trim();
+            if (!mssv) {
+                alert("Vui lòng nhập Mã Sinh Viên trước khi chụp ảnh!");
+                return;
+            }
+
+            const context = canvas.getContext('2d');
+            const vWidth = video.videoWidth || 640;
+            const vHeight = video.videoHeight || 480;
+
+            canvas.width = vWidth;
+            canvas.height = vHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg', 0.7);
+            
+            if (!imageData || imageData.length < 1000) {
+                alert("Lỗi: Không lấy được khung hình. Hãy thử lại!");
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            captureBtn.disabled = true;
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                body: JSON.stringify({ mssv: mssv, image: imageData })
+            })
+            .then(response => response.json())
+            .then(result => {
+                loadingDiv.style.display = 'none';
+                captureBtn.disabled = false;
+                
+                if(result.status === 'success') {
+                    alert('Điểm danh thành công!');
+                    mssvInput.value = ''; 
+                } else {
+                    alert('Có lỗi từ máy chủ: ' + result.message);
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                captureBtn.disabled = false;
+                alert('Lỗi kết nối mạng. Hãy thử lại!');
+            });
+        });
+    </script>
+</body>
+</html>
