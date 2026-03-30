@@ -10,18 +10,15 @@
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
         
-        /* Giao diện Đăng nhập & Thông tin User */
         #login-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; }
         #main-app { display: none; } 
         .user-info { margin-bottom: 20px; font-weight: bold; color: #4CAF50; display: none; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; max-width: 400px; margin: 0 auto 20px;}
         .btn-logout { margin-top: 10px; padding: 6px 12px; font-size: 14px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Chuyển tab Điểm danh / Đăng ký lịch */
         .tab-menu { display: flex; justify-content: center; margin-bottom: 20px; background: #ddd; border-radius: 8px; overflow: hidden; max-width: 400px; margin: 0 auto 20px; }
         .tab-btn { flex: 1; padding: 12px; font-weight: bold; border: none; cursor: pointer; background: transparent; transition: 0.3s; }
         .tab-btn.active { background: #4CAF50; color: white; }
 
-        /* Camera & Elements */
         #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; display: none; }
         select, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
         
@@ -34,18 +31,15 @@
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
 
-        /* UI Đăng ký lịch */
         #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
         .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
         .day-item input { width: 20px; height: 20px; margin-right: 10px; margin-top: 0; }
         
-        /* Thanh tiến trình */
         #progress-container { width: 100%; max-width: 300px; margin: 15px auto; background-color: #ddd; border-radius: 13px; display: none; }
         #progress-bar { width: 0%; height: 20px; background-color: #4CAF50; border-radius: 13px; transition: width 0.4s ease; }
         #loading-text { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; display: none; }
 
-        /* UI Thống kê */
         .btn-stats { background-color: #673ab7; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 30px; }
         #stats-panel { display: none; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ccc; max-width: 400px; margin: 20px auto; text-align: left;}
         #stats-panel h3 { margin-top: 0; color: #673ab7; text-align: center;}
@@ -163,10 +157,11 @@
 
     <script>
         // --- 1. CẤU HÌNH API ---
+        // THAY LINK GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
         let currentGoogleEmail = "";
 
-        // --- 2. XỬ LÝ ĐĂNG NHẬP GOOGLE LƯU LOCALSTORAGE ---
+        // --- 2. XỬ LÝ ĐĂNG NHẬP LƯU LOCALSTORAGE ---
         window.onload = function() {
             const savedEmail = localStorage.getItem('student_email');
             if (savedEmail) {
@@ -183,6 +178,12 @@
             document.getElementById('user-info').style.display = 'block';
             document.getElementById('user-email').innerText = email;
             document.getElementById('main-app').style.display = 'block';
+
+            // TÍNH NĂNG MỚI: TỰ ĐỘNG CHỌN TÊN ĐÃ LƯU
+            const savedName = localStorage.getItem('student_name');
+            if (savedName) {
+                document.getElementById('hoTen').value = savedName;
+            }
         }
 
         function decodeJwtResponse(token) {
@@ -204,6 +205,7 @@
         function logoutGoogle() {
             if(confirm("Bạn có chắc chắn muốn đăng xuất tài khoản này?")) {
                 localStorage.removeItem('student_email');
+                localStorage.removeItem('student_name'); // Xóa luôn trí nhớ về Tên
                 window.location.reload();
             }
         }
@@ -244,7 +246,16 @@
             }).catch(() => { btnSave.innerText = "💾 Lưu bổ sung lịch"; btnSave.disabled = false; });
         }
 
-        document.getElementById('hoTen').addEventListener('change', loadCurrentSchedule);
+        // TÍNH NĂNG MỚI: KHI CHỌN TÊN XONG LÀ LƯU VÀO BỘ NHỚ LUÔN
+        document.getElementById('hoTen').addEventListener('change', function() {
+            const selectedName = this.value;
+            if (selectedName) {
+                localStorage.setItem('student_name', selectedName);
+            } else {
+                localStorage.removeItem('student_name'); // Nếu chọn lại "-- Chọn tên --" thì xóa
+            }
+            loadCurrentSchedule();
+        });
 
         function switchTab(tabName) {
             if (tabName === 'checkin') {
@@ -390,13 +401,15 @@
                 setTimeout(() => {
                     resetButtons(); progressBar.style.width = '0%';
                     if(res.status === 'success') {
-                        alert(res.message); hoTenSelect.selectedIndex = 0; retakeBtn.click();
+                        alert(res.message); 
+                        // Không reset trắng ô Tên nữa, vì mình muốn nó nhớ luôn!
+                        retakeBtn.click();
                     } else { alert(res.message); }
                 }, 500); 
             }).catch(() => { alert('Lỗi mạng!'); clearInterval(progressInterval); resetButtons(); });
         }
 
-        // --- 6. XỬ LÝ NÚT THỐNG KÊ (CHỈ XEM CHO GỌN) ---
+        // --- 6. XỬ LÝ NÚT THỐNG KÊ ---
         document.getElementById('check-stats-btn').addEventListener('click', function() {
             const btn = this;
             btn.innerText = "⏳ Đang tải dữ liệu..."; btn.disabled = true;
