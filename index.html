@@ -3,32 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Thực tập</title>
+    <title>Hệ thống Điểm danh Thực tập</title>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
         
+        /* Giao diện Đăng nhập & Thông tin User */
+        #login-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; }
+        #main-app { display: none; } 
+        .user-info { margin-bottom: 20px; font-weight: bold; color: #4CAF50; display: none; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; max-width: 400px; margin: 0 auto 20px;}
+        .btn-logout { margin-top: 10px; padding: 6px 12px; font-size: 14px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
         /* Chuyển tab Điểm danh / Đăng ký lịch */
         .tab-menu { display: flex; justify-content: center; margin-bottom: 20px; background: #ddd; border-radius: 8px; overflow: hidden; max-width: 400px; margin: 0 auto 20px; }
         .tab-btn { flex: 1; padding: 12px; font-weight: bold; border: none; cursor: pointer; background: transparent; transition: 0.3s; }
         .tab-btn.active { background: #4CAF50; color: white; }
 
+        /* Camera & Elements */
         #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; display: none; }
-        select, button, input { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
+        select, button, input[type="text"] { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
         
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #ff9800; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
         
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
 
         /* UI Đăng ký lịch */
-        #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
         .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
-        .day-item input { width: 20px; height: 20px; margin-right: 10px; margin-top: 0; }
+        .day-item input { width: 20px; height: 20px; margin-right: 10px; }
         
+        /* Thanh tiến trình */
         #progress-container { width: 100%; max-width: 300px; margin: 15px auto; background-color: #ddd; border-radius: 13px; display: none; }
         #progress-bar { width: 0%; height: 20px; background-color: #4CAF50; border-radius: 13px; transition: width 0.4s ease; }
         #loading-text { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; display: none; }
@@ -36,59 +48,155 @@
 </head>
 <body>
 
-    <div class="tab-menu">
-        <button id="tab-checkin" class="tab-btn active" onclick="switchTab('checkin')">📍 Điểm danh</button>
-        <button id="tab-schedule" class="tab-btn" onclick="switchTab('schedule')">🗓️ Đăng ký lịch</button>
+    <div id="login-panel">
+        <h2 style="color: #4CAF50;">Hệ thống Quản lý Thực tập</h2>
+        <p>Vui lòng đăng nhập bằng Gmail của bạn</p>
+        
+        <div id="g_id_onload"
+             data-client_id="659967368152-b0lh488eled9lob2gfolerqe8k5eq0u7.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"></div>
     </div>
 
-    <select id="hoTen">
-        <option value="">-- Chọn tên của bạn --</option>
-        <option value="Phạm Văn Đăng">Phạm Văn Đăng</option>
+    <div id="user-info" class="user-info">
+        👤 Tài khoản: <span id="user-email" style="color:#000;"></span><br>
+        <button class="btn-logout" onclick="logoutGoogle()">🚪 Đăng xuất</button>
+    </div>
+
+    <div id="main-app">
+        
+        <div class="tab-menu">
+            <button id="tab-checkin" class="tab-btn active" onclick="switchTab('checkin')">📍 Điểm danh</button>
+            <button id="tab-schedule" class="tab-btn" onclick="switchTab('schedule')">🗓️ Đăng ký lịch</button>
+        </div>
+
+        <select id="hoTen">
+            <option value="">-- Chọn tên của bạn --</option>
+            <option value="Lê Nguyễn Ngọc Yến">Lê Nguyễn Ngọc Yến</option>
+            <option value="Võ Thị Ngọc Huyền">Võ Thị Ngọc Huyền</option>
+            <option value="Ngô Nhật Hào">Ngô Nhật Hào</option>
+            <option value="Nguyễn Như Ngọc">Nguyễn Như Ngọc</option>
+            <option value="Nguyễn Quốc Thái">Nguyễn Quốc Thái</option>
+            <option value="Lê Thị Thu Nguyệt">Lê Thị Thu Nguyệt</option>
+            <option value="Phạm Văn Đăng">Phạm Văn Đăng</option>
+            <option value="Bùi Thị Hồng Dung">Bùi Thị Hồng Dung</option>
+            <option value="Ngô Trần Duy Khang">Ngô Trần Duy Khang</option>
+            <option value="Phạm Như Quỳnh">Phạm Như Quỳnh</option>
+            <option value="Mai Hữu Thiện">Mai Hữu Thiện</option>
+            <option value="Phan Huỳnh Công Danh">Phan Huỳnh Công Danh</option>
+            <option value="Lê Huỳnh Giao">Lê Huỳnh Giao</option>
+            <option value="Dương Khai Kiệt">Dương Khai Kiệt</option>
+            <option value="Võ Nguyễn Đạt Sơn">Võ Nguyễn Đạt Sơn</option>
+            <option value="Nguyễn Khánh Duy">Nguyễn Khánh Duy</option>
+            <option value="Ngô Gia Hân">Ngô Gia Hân</option>
+            <option value="Nguyễn Võ Hoàng Phúc">Nguyễn Võ Hoàng Phúc</option>
+            <option value="Lê Quốc Việt">Lê Quốc Việt</option>
+            <option value="Tăng Khánh Vân">Tăng Khánh Vân</option>
+            <option value="Nguyễn Hoàng Bảo Duy">Nguyễn Hoàng Bảo Duy</option>
+            <option value="Võ Nguyễn Minh Thư">Võ Nguyễn Minh Thư</option>
+            <option value="Nguyễn Thị Ngọc Trinh">Nguyễn Thị Ngọc Trinh</option>
+            <option value="Lương Thị Huỳnh Trâm">Lương Thị Huỳnh Trâm</option>
+            <option value="Trịnh Gia Hiếu">Trịnh Gia Hiếu</option>
+            <option value="Huỳnh Lê Kim Ngân">Huỳnh Lê Kim Ngân</option>
+            <option value="Thái Thanh Nhanh">Thái Thanh Nhanh</option>
+            <option value="Lê Hồng Son">Lê Hồng Son</option>
+            <option value="Hồ Trần Ngọc Hạ">Hồ Trần Ngọc Hạ</option>
+            <option value="Nguyễn Kim Nhựt">Nguyễn Kim Nhựt</option>
+            <option value="Nguyễn Thị Hoàng Trinh">Nguyễn Thị Hoàng Trinh</option>
+            <option value="Nguyễn Thành Trung">Nguyễn Thành Trung</option>
+            <option value="Lê Thị Như Ý">Lê Thị Như Ý</option>
         </select>
 
-    <div id="checkin-panel">
-        <input type="text" id="ghiChu" placeholder="Ghi chú (Đi bù, đổi ca, đi trễ...)">
-        <br>
-        <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
-        <video id="camera-stream" autoplay playsinline></video>
-        <canvas id="preview-canvas"></canvas>
-        
-        <div id="active-camera-controls">
-            <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button>
-            <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+        <div id="checkin-panel">
+            <input type="text" id="ghiChu" placeholder="Ghi chú (Đi bù, đổi ca, đi trễ...)">
+            <br>
+            <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
+            <video id="camera-stream" autoplay playsinline></video>
+            <canvas id="preview-canvas"></canvas>
+            
+            <div id="active-camera-controls">
+                <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button>
+                <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+            </div>
+
+            <div id="review-controls">
+                <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
+                <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
+            </div>
         </div>
 
-        <div id="review-controls">
-            <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
-            <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
+        <div id="schedule-panel">
+            <h3 style="margin-top:0; color:#4CAF50;">Lịch thực tập tuần này</h3>
+            <p style="font-size:14px; color:#555;">Tích vào những ngày bạn sẽ lên trường:</p>
+            
+            <div class="days-grid">
+                <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label>
+                <label class="day-item"><input type="checkbox" id="d3" value="X"> Thứ 3</label>
+                <label class="day-item"><input type="checkbox" id="d4" value="X"> Thứ 4</label>
+                <label class="day-item"><input type="checkbox" id="d5" value="X"> Thứ 5</label>
+                <label class="day-item"><input type="checkbox" id="d6" value="X"> Thứ 6</label>
+                <label class="day-item"><input type="checkbox" id="d7" value="X"> Thứ 7</label>
+                <label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
+            </div>
+            
+            <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu lịch của tôi</button>
         </div>
+
+        <div id="progress-container"><div id="progress-bar"></div></div>
+        <div id="loading-text">Đang xử lý...</div>
     </div>
-
-    <div id="schedule-panel">
-        <h3 style="margin-top:0; color:#4CAF50;">Lịch thực tập tuần này</h3>
-        <p style="font-size:14px; color:#555;">Tích vào những ngày bạn sẽ lên trường:</p>
-        
-        <div class="days-grid">
-            <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label>
-            <label class="day-item"><input type="checkbox" id="d3" value="X"> Thứ 3</label>
-            <label class="day-item"><input type="checkbox" id="d4" value="X"> Thứ 4</label>
-            <label class="day-item"><input type="checkbox" id="d5" value="X"> Thứ 5</label>
-            <label class="day-item"><input type="checkbox" id="d6" value="X"> Thứ 6</label>
-            <label class="day-item"><input type="checkbox" id="d7" value="X"> Thứ 7</label>
-            <label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
-        </div>
-        
-        <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu lịch của tôi</button>
-    </div>
-
-    <div id="progress-container"><div id="progress-bar"></div></div>
-    <div id="loading-text">Đang xử lý...</div>
 
     <script>
-        // --- DÁN LINK APP SCRIPT VÀO ĐÂY ---
-        const APPS_SCRIPT_URL = 'YOUR_WEB_APP_URL_HERE'; 
+        // --- 1. CẤU HÌNH API ---
+        // THAY LINK GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
+        let currentGoogleEmail = "";
 
-        // Hàm chuyển đổi qua lại giữa 2 Tab
+        // --- 2. XỬ LÝ ĐĂNG NHẬP GOOGLE LƯU LOCALSTORAGE ---
+        window.onload = function() {
+            const savedEmail = localStorage.getItem('student_email');
+            if (savedEmail) {
+                currentGoogleEmail = savedEmail;
+                showMainApp(currentGoogleEmail);
+            } else {
+                document.getElementById('login-panel').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
+            }
+        };
+
+        function showMainApp(email) {
+            document.getElementById('login-panel').style.display = 'none';
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('user-email').innerText = email;
+            document.getElementById('main-app').style.display = 'block';
+        }
+
+        function decodeJwtResponse(token) {
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function handleCredentialResponse(response) {
+            const responsePayload = decodeJwtResponse(response.credential);
+            currentGoogleEmail = responsePayload.email; 
+            localStorage.setItem('student_email', currentGoogleEmail);
+            showMainApp(currentGoogleEmail);
+        }
+
+        function logoutGoogle() {
+            if(confirm("Bạn có chắc chắn muốn đăng xuất tài khoản này?")) {
+                localStorage.removeItem('student_email');
+                window.location.reload();
+            }
+        }
+
+        // --- 3. XỬ LÝ CHUYỂN TAB ---
         function switchTab(tabName) {
             if (tabName === 'checkin') {
                 document.getElementById('checkin-panel').style.display = 'block';
@@ -103,12 +211,11 @@
             }
         }
 
-        // --- XỬ LÝ LƯU LỊCH (TAB 2) ---
+        // --- 4. XỬ LÝ LƯU LỊCH ---
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
             const hoTen = document.getElementById('hoTen').value;
             if (!hoTen) { alert("Bạn phải chọn Tên của mình trước!"); return; }
 
-            // Lấy giá trị của 7 ô checkbox (Nếu được tích thì ra "X", không thì "")
             const schedule = [
                 document.getElementById('d2').checked ? "X" : "",
                 document.getElementById('d3').checked ? "X" : "",
@@ -126,15 +233,14 @@
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                // Gửi action đăng ký lịch
-                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, schedule: schedule })
+                // Có gửi kèm Email
+                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, schedule: schedule, email: currentGoogleEmail })
             })
             .then(r => r.json()).then(res => {
                 btn.innerText = "💾 Lưu lịch của tôi";
                 btn.disabled = false;
                 if(res.status === 'success') {
                     alert(res.message);
-                    // Reset checkbox sau khi lưu
                     document.querySelectorAll('.days-grid input').forEach(cb => cb.checked = false);
                     document.getElementById('hoTen').selectedIndex = 0;
                 } else { alert("Lỗi: " + res.message); }
@@ -142,6 +248,27 @@
                 alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch của tôi"; btn.disabled = false;
             });
         });
+
+        // --- 5. XỬ LÝ CAMERA & ĐIỂM DANH ---
+        const video = document.getElementById('camera-stream');
+        const canvas = document.getElementById('preview-canvas');
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const activeCameraControls = document.getElementById('active-camera-controls');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const reviewControls = document.getElementById('review-controls');
+        const retakeBtn = document.getElementById('retake-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const hoTenSelect = document.getElementById('hoTen');
+        const ghiChuInput = document.getElementById('ghiChu');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
+
+        let currentImageData = null;
+        let currentStream = null;
+        let useFrontCamera = false;
+
         function initCamera() {
             if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
             const constraints = { video: { facingMode: (useFrontCamera ? "user" : "environment") }, audio: false };
@@ -181,77 +308,63 @@
             activeCameraControls.style.display = 'block';
         });
 
-        // HÀM CHẠY THANH TIẾN TRÌNH GIẢ LẬP
         function runProgressBar() {
             progressContainer.style.display = 'block';
             loadingText.style.display = 'block';
-            loadingText.innerText = "Đang tải ảnh lên (tốc độ mạng)...";
+            loadingText.innerText = "Đang xử lý...";
             progressBar.style.width = '10%';
-            
             let progress = 10;
             const interval = setInterval(() => {
-                progress += Math.random() * 15; // Tăng ngẫu nhiên tạo cảm giác chân thực
-                if (progress > 85) {
-                    progress = 85; // Dừng lại ở 85% chờ Google xử lý
-                    loadingText.innerText = "Đang lưu vào hệ thống...";
-                    clearInterval(interval);
-                }
+                progress += Math.random() * 15;
+                if (progress > 85) { progress = 85; clearInterval(interval); }
                 progressBar.style.width = progress + '%';
             }, 500);
             return interval;
         }
 
-        // XỬ LÝ KHI BẤM NÚT "GỬI ĐI" (Có lấy GPS)
+        function resetButtons() {
+            progressContainer.style.display = 'none';
+            loadingText.style.display = 'none';
+            submitBtn.disabled = false; retakeBtn.disabled = false;
+        }
+
         submitBtn.addEventListener('click', () => {
             const hoTen = hoTenSelect.value;
             if (!hoTen) { alert("Vui lòng chọn tên!"); return; }
             
-            submitBtn.disabled = true;
-            retakeBtn.disabled = true;
-            
-            // Hiện thông báo đang lấy GPS
+            submitBtn.disabled = true; retakeBtn.disabled = true;
             progressContainer.style.display = 'block';
             loadingText.style.display = 'block';
-            loadingText.innerText = "📍 Đang kiểm tra vị trí định vị...";
+            loadingText.innerText = "📍 Đang kiểm tra vị trí...";
             progressBar.style.width = '5%';
 
-            // Yêu cầu lấy vị trí từ điện thoại
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const userLat = position.coords.latitude;
                         const userLng = position.coords.longitude;
-                        sendDataToServer(hoTen, userLat, userLng); // Gọi hàm gửi dữ liệu
+                        sendDataToServer(hoTen, userLat, userLng);
                     },
                     (error) => {
-                        alert("Lỗi Định vị: Bạn phải BẬT VỊ TRÍ trên điện thoại và Cấp quyền cho trình duyệt thì mới được điểm danh!");
+                        alert("Lỗi Định vị: Bật GPS trên máy và cấp quyền cho web để điểm danh!");
                         resetButtons();
                     },
                     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                 );
             } else {
-                alert("Trình duyệt hoặc điện thoại của bạn không hỗ trợ định vị GPS.");
-                resetButtons();
+                alert("Không hỗ trợ GPS."); resetButtons();
             }
         });
 
-        // Hàm ẩn hiện nút khi lỗi GPS
-        function resetButtons() {
-            progressContainer.style.display = 'none';
-            loadingText.style.display = 'none';
-            submitBtn.disabled = false;
-            retakeBtn.disabled = false;
-        }
-
-        // HÀM GỬI DỮ LIỆU LÊN SERVER (Có kèm tọa độ)
         function sendDataToServer(hoTen, lat, lng) {
-            const progressInterval = runProgressBar(); // Kích hoạt thanh tiến trình
+            const ghiChu = ghiChuInput.value.trim();
+            const progressInterval = runProgressBar();
 
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                // NẠP THÊM lat VÀ lng VÀO GÓI HÀNG GỬI ĐI
-                body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData, lat: lat, lng: lng })
+                // Gửi đầy đủ thông tin (Kèm Email)
+                body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData, lat: lat, lng: lng, ghiChu: ghiChu, email: currentGoogleEmail })
             })
             .then(r => r.json()).then(res => {
                 clearInterval(progressInterval);
@@ -261,61 +374,18 @@
                 setTimeout(() => {
                     resetButtons();
                     progressBar.style.width = '0%';
-                    
                     if(res.status === 'success') {
                         alert(res.message);
                         hoTenSelect.selectedIndex = 0;
+                        ghiChuInput.value = '';
                         retakeBtn.click();
                     } else { alert(res.message); }
                 }, 500); 
             }).catch(() => { 
                 alert('Lỗi kết nối mạng!'); 
-                clearInterval(progressInterval);
-                resetButtons();
+                clearInterval(progressInterval); resetButtons();
             });
         }
-
-        // XỬ LÝ NÚT THỐNG KÊ
-        document.getElementById('check-stats-btn').addEventListener('click', function() {
-            const btn = this;
-            btn.innerText = "⏳ Đang tải dữ liệu...";
-            btn.disabled = true;
-
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                // Gọi action get_stats
-                body: JSON.stringify({ action: "get_stats" })
-            })
-            .then(r => r.json()).then(res => {
-                btn.innerText = "📊 Xem thống kê điểm danh";
-                btn.disabled = false;
-                
-                if(res.status === 'success') {
-                    document.getElementById('stats-panel').style.display = 'block';
-                    document.getElementById('stat-numbers').innerText = res.totalCheckedIn + "/" + res.totalExpected;
-                    
-                    const ul = document.getElementById('missing-list');
-                    ul.innerHTML = ""; // Xóa list cũ
-                    if (res.missing.length === 0) {
-                        ul.innerHTML = "<li style='color:green;'>Quá tuyệt! Tất cả mọi người đã điểm danh.</li>";
-                    } else {
-                        res.missing.forEach(name => {
-                            let li = document.createElement('li');
-                            li.className = 'missing-name';
-                            li.innerText = name;
-                            ul.appendChild(li);
-                        });
-                    }
-                } else {
-                    alert('Lỗi: ' + res.message);
-                }
-            }).catch(() => {
-                alert('Lỗi kết nối mạng!');
-                btn.innerText = "📊 Xem thống kê điểm danh";
-                btn.disabled = false;
-            });
-        });
     </script>
 </body>
 </html>
