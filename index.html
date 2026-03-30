@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Điểm danh Thực tập</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4CAF50">
-    <link rel="apple-touch-icon" href="icon-192.png">
-
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
         #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; }
@@ -18,9 +14,20 @@
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #ff9800; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-stats { background-color: #673ab7; color: white; border: none; font-weight: bold; cursor: pointer; margin-top:30px;}
+        
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
-        #loading { display: none; color: blue; font-weight: bold; margin-top: 10px;}
+        
+        /* CSS cho thanh tiến trình */
+        #progress-container { width: 100%; max-width: 300px; margin: 15px auto; background-color: #ddd; border-radius: 13px; display: none; }
+        #progress-bar { width: 0%; height: 20px; background-color: #4CAF50; border-radius: 13px; transition: width 0.4s ease; }
+        #loading-text { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; display: none; }
+
+        /* CSS cho khu vực thống kê */
+        #stats-panel { display: none; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ccc; max-width: 400px; margin: 20px auto; text-align: left;}
+        #stats-panel h3 { margin-top: 0; color: #673ab7; text-align: center;}
+        .missing-name { color: #f44336; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -79,14 +86,19 @@
         <button id="submit-btn" class="btn-primary">✅ Gửi đi</button>
     </div>
     
-    <div id="loading">⏳ Đang xử lý...</div>
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <div id="loading-text">Đang tải ảnh lên...</div>
+
+    <hr style="margin-top: 40px; border-color: #eee;">
+    <button id="check-stats-btn" class="btn-stats">📊 Xem thống kê điểm danh</button>
+    <div id="stats-panel">
+        <h3>Tình hình hôm nay</h3>
+        <p>Tiến độ: <b id="stat-numbers">0/0</b> người đã điểm danh.</p>
+        <p><b>Danh sách CHƯA điểm danh:</b></p>
+        <ul id="missing-list"></ul>
+    </div>
 
     <script>
-        // Đăng ký Service Worker cho PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-
         const video = document.getElementById('camera-stream');
         const canvas = document.getElementById('preview-canvas');
         const startCameraBtn = document.getElementById('start-camera-btn');
@@ -97,11 +109,16 @@
         const retakeBtn = document.getElementById('retake-btn');
         const submitBtn = document.getElementById('submit-btn');
         const hoTenSelect = document.getElementById('hoTen');
-        const loadingDiv = document.getElementById('loading');
+        
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
 
         let currentImageData = null;
         let currentStream = null;
         let useFrontCamera = false;
+        
+        // --- DÁN LINK APP SCRIPT CỦA BẠN VÀO ĐÂY ---
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
 
         function initCamera() {
@@ -143,24 +160,107 @@
             activeCameraControls.style.display = 'block';
         });
 
+        // HÀM CHẠY THANH TIẾN TRÌNH GIẢ LẬP
+        function runProgressBar() {
+            progressContainer.style.display = 'block';
+            loadingText.style.display = 'block';
+            loadingText.innerText = "Đang tải ảnh lên (tốc độ mạng)...";
+            progressBar.style.width = '10%';
+            
+            let progress = 10;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15; // Tăng ngẫu nhiên tạo cảm giác chân thực
+                if (progress > 85) {
+                    progress = 85; // Dừng lại ở 85% chờ Google xử lý
+                    loadingText.innerText = "Đang lưu vào hệ thống...";
+                    clearInterval(interval);
+                }
+                progressBar.style.width = progress + '%';
+            }, 500);
+            return interval;
+        }
+
         submitBtn.addEventListener('click', () => {
             const hoTen = hoTenSelect.value;
             if (!hoTen) { alert("Vui lòng chọn tên!"); return; }
-            loadingDiv.style.display = 'block';
+            
             submitBtn.disabled = true;
+            retakeBtn.disabled = true;
+            const progressInterval = runProgressBar(); // Kích hoạt thanh tiến trình
+
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                body: JSON.stringify({ hoTen: hoTen, image: currentImageData })
+                // Có thêm biến action: "check_in"
+                body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData })
             })
             .then(r => r.json()).then(res => {
-                loadingDiv.style.display = 'none'; submitBtn.disabled = false;
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%'; // Full bình
+                loadingText.innerText = "Hoàn tất!";
+                
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    loadingText.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    submitBtn.disabled = false;
+                    retakeBtn.disabled = false;
+                    
+                    if(res.status === 'success') {
+                        alert('Điểm danh thành công!');
+                        hoTenSelect.selectedIndex = 0;
+                        retakeBtn.click();
+                    } else { alert(res.message); }
+                }, 500); // Chờ 0.5s cho đẹp rồi mới ẩn thanh đi
+            }).catch(() => { 
+                alert('Lỗi kết nối mạng!'); 
+                clearInterval(progressInterval);
+                progressContainer.style.display = 'none'; 
+                loadingText.style.display = 'none'; 
+                submitBtn.disabled = false; retakeBtn.disabled = false;
+            });
+        });
+
+        // XỬ LÝ NÚT THỐNG KÊ
+        document.getElementById('check-stats-btn').addEventListener('click', function() {
+            const btn = this;
+            btn.innerText = "⏳ Đang tải dữ liệu...";
+            btn.disabled = true;
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                // Gọi action get_stats
+                body: JSON.stringify({ action: "get_stats" })
+            })
+            .then(r => r.json()).then(res => {
+                btn.innerText = "📊 Xem thống kê điểm danh";
+                btn.disabled = false;
+                
                 if(res.status === 'success') {
-                    alert('Điểm danh thành công!');
-                    hoTenSelect.selectedIndex = 0;
-                    retakeBtn.click();
-                } else { alert('Lỗi: ' + res.message); }
-            }).catch(() => { alert('Lỗi kết nối!'); loadingDiv.style.display = 'none'; submitBtn.disabled = false; });
+                    document.getElementById('stats-panel').style.display = 'block';
+                    document.getElementById('stat-numbers').innerText = res.totalCheckedIn + "/" + res.totalExpected;
+                    
+                    const ul = document.getElementById('missing-list');
+                    ul.innerHTML = ""; // Xóa list cũ
+                    if (res.missing.length === 0) {
+                        ul.innerHTML = "<li style='color:green;'>Quá tuyệt! Tất cả mọi người đã điểm danh.</li>";
+                    } else {
+                        res.missing.forEach(name => {
+                            let li = document.createElement('li');
+                            li.className = 'missing-name';
+                            li.innerText = name;
+                            ul.appendChild(li);
+                        });
+                    }
+                } else {
+                    alert('Lỗi: ' + res.message);
+                }
+            }).catch(() => {
+                alert('Lỗi kết nối mạng!');
+                btn.innerText = "📊 Xem thống kê điểm danh";
+                btn.disabled = false;
+            });
         });
     </script>
 </body>
