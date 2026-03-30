@@ -180,46 +180,79 @@
             return interval;
         }
 
+        // XỬ LÝ KHI BẤM NÚT "GỬI ĐI" (Có lấy GPS)
         submitBtn.addEventListener('click', () => {
             const hoTen = hoTenSelect.value;
             if (!hoTen) { alert("Vui lòng chọn tên!"); return; }
             
             submitBtn.disabled = true;
             retakeBtn.disabled = true;
+            
+            // Hiện thông báo đang lấy GPS
+            progressContainer.style.display = 'block';
+            loadingText.style.display = 'block';
+            loadingText.innerText = "📍 Đang kiểm tra vị trí định vị...";
+            progressBar.style.width = '5%';
+
+            // Yêu cầu lấy vị trí từ điện thoại
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        sendDataToServer(hoTen, userLat, userLng); // Gọi hàm gửi dữ liệu
+                    },
+                    (error) => {
+                        alert("Lỗi Định vị: Bạn phải BẬT VỊ TRÍ trên điện thoại và Cấp quyền cho trình duyệt thì mới được điểm danh!");
+                        resetButtons();
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            } else {
+                alert("Trình duyệt hoặc điện thoại của bạn không hỗ trợ định vị GPS.");
+                resetButtons();
+            }
+        });
+
+        // Hàm ẩn hiện nút khi lỗi GPS
+        function resetButtons() {
+            progressContainer.style.display = 'none';
+            loadingText.style.display = 'none';
+            submitBtn.disabled = false;
+            retakeBtn.disabled = false;
+        }
+
+        // HÀM GỬI DỮ LIỆU LÊN SERVER (Có kèm tọa độ)
+        function sendDataToServer(hoTen, lat, lng) {
             const progressInterval = runProgressBar(); // Kích hoạt thanh tiến trình
 
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                // Có thêm biến action: "check_in"
-                body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData })
+                // NẠP THÊM lat VÀ lng VÀO GÓI HÀNG GỬI ĐI
+                body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData, lat: lat, lng: lng })
             })
             .then(r => r.json()).then(res => {
                 clearInterval(progressInterval);
-                progressBar.style.width = '100%'; // Full bình
-                loadingText.innerText = "Hoàn tất!";
+                progressBar.style.width = '100%'; 
+                loadingText.innerText = res.status === 'success' ? "Hoàn tất!" : "Lỗi!";
                 
                 setTimeout(() => {
-                    progressContainer.style.display = 'none';
-                    loadingText.style.display = 'none';
+                    resetButtons();
                     progressBar.style.width = '0%';
-                    submitBtn.disabled = false;
-                    retakeBtn.disabled = false;
                     
                     if(res.status === 'success') {
-                        alert('Điểm danh thành công!');
+                        alert(res.message);
                         hoTenSelect.selectedIndex = 0;
                         retakeBtn.click();
                     } else { alert(res.message); }
-                }, 500); // Chờ 0.5s cho đẹp rồi mới ẩn thanh đi
+                }, 500); 
             }).catch(() => { 
                 alert('Lỗi kết nối mạng!'); 
                 clearInterval(progressInterval);
-                progressContainer.style.display = 'none'; 
-                loadingText.style.display = 'none'; 
-                submitBtn.disabled = false; retakeBtn.disabled = false;
+                resetButtons();
             });
-        });
+        }
 
         // XỬ LÝ NÚT THỐNG KÊ
         document.getElementById('check-stats-btn').addEventListener('click', function() {
