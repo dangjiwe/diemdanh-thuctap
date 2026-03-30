@@ -211,6 +211,73 @@
             }
         }
 
+        // --- 3.5. HÀM TẢI LỊCH VÀ KHÓA Ô CHECKBOX ---
+        function loadCurrentSchedule() {
+            const hoTen = document.getElementById('hoTen').value;
+            // Chỉ chạy nếu đã chọn tên và đang ở Tab Đăng ký lịch
+            if (!hoTen || document.getElementById('schedule-panel').style.display === 'none') return; 
+
+            const btnSave = document.getElementById('save-schedule-btn');
+            const days = ['d2', 'd3', 'd4', 'd5', 'd6', 'd7', 'cn'];
+            
+            // Đưa tất cả checkbox về trạng thái mở để chuẩn bị tải dữ liệu mới
+            days.forEach(id => {
+                const cb = document.getElementById(id);
+                cb.checked = false;
+                cb.disabled = false;
+                cb.parentElement.style.opacity = "1"; // Sáng lên
+            });
+
+            btnSave.innerText = "⏳ Đang tải lịch cũ...";
+            btnSave.disabled = true;
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "get_schedule", hoTen: hoTen })
+            })
+            .then(r => r.json()).then(res => {
+                btnSave.innerText = "💾 Lưu bổ sung lịch";
+                btnSave.disabled = false;
+                
+                if(res.status === 'success') {
+                    const sched = res.schedule; // Nhận mảng 7 ngày từ Server
+                    days.forEach((id, index) => {
+                        const cb = document.getElementById(id);
+                        if (sched[index] === "X") {
+                            cb.checked = true;       // Tích sẵn
+                            cb.disabled = true;      // Khóa lại không cho bấm
+                            cb.parentElement.style.opacity = "0.5"; // Làm mờ đi cho biết là đã chốt
+                        }
+                    });
+                }
+            }).catch(() => {
+                btnSave.innerText = "💾 Lưu lịch của tôi";
+                btnSave.disabled = false;
+            });
+        }
+
+        // Bắt sự kiện: Cứ hễ đổi tên là tự động tải lịch
+        document.getElementById('hoTen').addEventListener('change', loadCurrentSchedule);
+        
+        // Sửa lại hàm switchTab: Khi bấm sang Tab Lịch thì cũng tự động tải
+        function switchTab(tabName) {
+            if (tabName === 'checkin') {
+                document.getElementById('checkin-panel').style.display = 'block';
+                document.getElementById('schedule-panel').style.display = 'none';
+                document.getElementById('tab-checkin').classList.add('active');
+                document.getElementById('tab-schedule').classList.remove('active');
+            } else {
+                document.getElementById('checkin-panel').style.display = 'none';
+                document.getElementById('schedule-panel').style.display = 'block';
+                document.getElementById('tab-schedule').classList.add('active');
+                document.getElementById('tab-checkin').classList.remove('active');
+                
+                // Trì hoãn một chút để đợi giao diện hiển thị xong rồi mới load lịch
+                setTimeout(loadCurrentSchedule, 100); 
+            }
+        }
+
         // --- 4. XỬ LÝ LƯU LỊCH ---
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
             const hoTen = document.getElementById('hoTen').value;
