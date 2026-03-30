@@ -3,124 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Điểm danh Thực tập</title>
+    <title>Hệ thống Thực tập</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
-        #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; }
-        #camera-stream { display: none; }
-        #preview-canvas { display: none; }
-        select, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
+        
+        /* Chuyển tab Điểm danh / Đăng ký lịch */
+        .tab-menu { display: flex; justify-content: center; margin-bottom: 20px; background: #ddd; border-radius: 8px; overflow: hidden; max-width: 400px; margin: 0 auto 20px; }
+        .tab-btn { flex: 1; padding: 12px; font-weight: bold; border: none; cursor: pointer; background: transparent; transition: 0.3s; }
+        .tab-btn.active { background: #4CAF50; color: white; }
+
+        #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; display: none; }
+        select, button, input { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa;}
+        
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
-        .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #ff9800; color: white; border: none; font-weight: bold; cursor: pointer; }
-        .btn-stats { background-color: #673ab7; color: white; border: none; font-weight: bold; cursor: pointer; margin-top:30px;}
+        .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
         
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
+
+        /* UI Đăng ký lịch */
+        #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
+        .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
+        .day-item input { width: 20px; height: 20px; margin-right: 10px; margin-top: 0; }
         
-        /* CSS cho thanh tiến trình */
         #progress-container { width: 100%; max-width: 300px; margin: 15px auto; background-color: #ddd; border-radius: 13px; display: none; }
         #progress-bar { width: 0%; height: 20px; background-color: #4CAF50; border-radius: 13px; transition: width 0.4s ease; }
         #loading-text { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; display: none; }
-
-        /* CSS cho khu vực thống kê */
-        #stats-panel { display: none; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ccc; max-width: 400px; margin: 20px auto; text-align: left;}
-        #stats-panel h3 { margin-top: 0; color: #673ab7; text-align: center;}
-        .missing-name { color: #f44336; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>Hệ thống Điểm danh</h2>
-    
+    <div class="tab-menu">
+        <button id="tab-checkin" class="tab-btn active" onclick="switchTab('checkin')">📍 Điểm danh</button>
+        <button id="tab-schedule" class="tab-btn" onclick="switchTab('schedule')">🗓️ Đăng ký lịch</button>
+    </div>
+
     <select id="hoTen">
         <option value="">-- Chọn tên của bạn --</option>
-        <option value="Lê Nguyễn Ngọc Yến">Lê Nguyễn Ngọc Yến</option>
-        <option value="Võ Thị Ngọc Huyền">Võ Thị Ngọc Huyền</option>
-        <option value="Ngô Nhật Hào">Ngô Nhật Hào</option>
-        <option value="Nguyễn Như Ngọc">Nguyễn Như Ngọc</option>
-        <option value="Nguyễn Quốc Thái">Nguyễn Quốc Thái</option>
-        <option value="Lê Thị Thu Nguyệt">Lê Thị Thu Nguyệt</option>
         <option value="Phạm Văn Đăng">Phạm Văn Đăng</option>
-        <option value="Bùi Thị Hồng Dung">Bùi Thị Hồng Dung</option>
-        <option value="Ngô Trần Duy Khang">Ngô Trần Duy Khang</option>
-        <option value="Phạm Như Quỳnh">Phạm Như Quỳnh</option>
-        <option value="Mai Hữu Thiện">Mai Hữu Thiện</option>
-        <option value="Phan Huỳnh Công Danh">Phan Huỳnh Công Danh</option>
-        <option value="Lê Huỳnh Giao">Lê Huỳnh Giao</option>
-        <option value="Dương Khai Kiệt">Dương Khai Kiệt</option>
-        <option value="Võ Nguyễn Đạt Sơn">Võ Nguyễn Đạt Sơn</option>
-        <option value="Nguyễn Khánh Duy">Nguyễn Khánh Duy</option>
-        <option value="Ngô Gia Hân">Ngô Gia Hân</option>
-        <option value="Nguyễn Võ Hoàng Phúc">Nguyễn Võ Hoàng Phúc</option>
-        <option value="Lê Quốc Việt">Lê Quốc Việt</option>
-        <option value="Tăng Khánh Vân">Tăng Khánh Vân</option>
-        <option value="Nguyễn Hoàng Bảo Duy">Nguyễn Hoàng Bảo Duy</option>
-        <option value="Võ Nguyễn Minh Thư">Võ Nguyễn Minh Thư</option>
-        <option value="Nguyễn Thị Ngọc Trinh">Nguyễn Thị Ngọc Trinh</option>
-        <option value="Lương Thị Huỳnh Trâm">Lương Thị Huỳnh Trâm</option>
-        <option value="Trịnh Gia Hiếu">Trịnh Gia Hiếu</option>
-        <option value="Huỳnh Lê Kim Ngân">Huỳnh Lê Kim Ngân</option>
-        <option value="Thái Thanh Nhanh">Thái Thanh Nhanh</option>
-        <option value="Lê Hồng Son">Lê Hồng Son</option>
-        <option value="Hồ Trần Ngọc Hạ">Hồ Trần Ngọc Hạ</option>
-        <option value="Nguyễn Kim Nhựt">Nguyễn Kim Nhựt</option>
-        <option value="Nguyễn Thị Hoàng Trinh">Nguyễn Thị Hoàng Trinh</option>
-        <option value="Nguyễn Thành Trung">Nguyễn Thành Trung</option>
-        <option value="Lê Thị Như Ý">Lê Thị Như Ý</option>
-    </select>
-    <br><br>
-    
-    <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
-    <video id="camera-stream" autoplay playsinline></video>
-    <canvas id="preview-canvas"></canvas>
-    
-    <div id="active-camera-controls">
-        <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button>
-        <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+        </select>
+
+    <div id="checkin-panel">
+        <input type="text" id="ghiChu" placeholder="Ghi chú (Đi bù, đổi ca, đi trễ...)">
+        <br>
+        <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
+        <video id="camera-stream" autoplay playsinline></video>
+        <canvas id="preview-canvas"></canvas>
+        
+        <div id="active-camera-controls">
+            <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button>
+            <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+        </div>
+
+        <div id="review-controls">
+            <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
+            <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
+        </div>
     </div>
 
-    <div id="review-controls">
-        <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
-        <button id="submit-btn" class="btn-primary">✅ Gửi đi</button>
+    <div id="schedule-panel">
+        <h3 style="margin-top:0; color:#4CAF50;">Lịch thực tập tuần này</h3>
+        <p style="font-size:14px; color:#555;">Tích vào những ngày bạn sẽ lên trường:</p>
+        
+        <div class="days-grid">
+            <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label>
+            <label class="day-item"><input type="checkbox" id="d3" value="X"> Thứ 3</label>
+            <label class="day-item"><input type="checkbox" id="d4" value="X"> Thứ 4</label>
+            <label class="day-item"><input type="checkbox" id="d5" value="X"> Thứ 5</label>
+            <label class="day-item"><input type="checkbox" id="d6" value="X"> Thứ 6</label>
+            <label class="day-item"><input type="checkbox" id="d7" value="X"> Thứ 7</label>
+            <label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
+        </div>
+        
+        <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu lịch của tôi</button>
     </div>
-    
+
     <div id="progress-container"><div id="progress-bar"></div></div>
-    <div id="loading-text">Đang tải ảnh lên...</div>
-
-    <hr style="margin-top: 40px; border-color: #eee;">
-    <button id="check-stats-btn" class="btn-stats">📊 Xem thống kê điểm danh</button>
-    <div id="stats-panel">
-        <h3>Tình hình hôm nay</h3>
-        <p>Tiến độ: <b id="stat-numbers">0/0</b> người đã điểm danh.</p>
-        <p><b>Danh sách CHƯA điểm danh:</b></p>
-        <ul id="missing-list"></ul>
-    </div>
+    <div id="loading-text">Đang xử lý...</div>
 
     <script>
-        const video = document.getElementById('camera-stream');
-        const canvas = document.getElementById('preview-canvas');
-        const startCameraBtn = document.getElementById('start-camera-btn');
-        const activeCameraControls = document.getElementById('active-camera-controls');
-        const switchCameraBtn = document.getElementById('switch-camera-btn');
-        const captureBtn = document.getElementById('capture-btn');
-        const reviewControls = document.getElementById('review-controls');
-        const retakeBtn = document.getElementById('retake-btn');
-        const submitBtn = document.getElementById('submit-btn');
-        const hoTenSelect = document.getElementById('hoTen');
-        
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        const loadingText = document.getElementById('loading-text');
+        // --- DÁN LINK APP SCRIPT VÀO ĐÂY ---
+        const APPS_SCRIPT_URL = 'YOUR_WEB_APP_URL_HERE'; 
 
-        let currentImageData = null;
-        let currentStream = null;
-        let useFrontCamera = false;
-        
-        // --- DÁN LINK APP SCRIPT CỦA BẠN VÀO ĐÂY ---
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
+        // Hàm chuyển đổi qua lại giữa 2 Tab
+        function switchTab(tabName) {
+            if (tabName === 'checkin') {
+                document.getElementById('checkin-panel').style.display = 'block';
+                document.getElementById('schedule-panel').style.display = 'none';
+                document.getElementById('tab-checkin').classList.add('active');
+                document.getElementById('tab-schedule').classList.remove('active');
+            } else {
+                document.getElementById('checkin-panel').style.display = 'none';
+                document.getElementById('schedule-panel').style.display = 'block';
+                document.getElementById('tab-schedule').classList.add('active');
+                document.getElementById('tab-checkin').classList.remove('active');
+            }
+        }
 
+        // --- XỬ LÝ LƯU LỊCH (TAB 2) ---
+        document.getElementById('save-schedule-btn').addEventListener('click', function() {
+            const hoTen = document.getElementById('hoTen').value;
+            if (!hoTen) { alert("Bạn phải chọn Tên của mình trước!"); return; }
+
+            // Lấy giá trị của 7 ô checkbox (Nếu được tích thì ra "X", không thì "")
+            const schedule = [
+                document.getElementById('d2').checked ? "X" : "",
+                document.getElementById('d3').checked ? "X" : "",
+                document.getElementById('d4').checked ? "X" : "",
+                document.getElementById('d5').checked ? "X" : "",
+                document.getElementById('d6').checked ? "X" : "",
+                document.getElementById('d7').checked ? "X" : "",
+                document.getElementById('cn').checked ? "X" : ""
+            ];
+
+            const btn = this;
+            btn.innerText = "⏳ Đang lưu...";
+            btn.disabled = true;
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                // Gửi action đăng ký lịch
+                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, schedule: schedule })
+            })
+            .then(r => r.json()).then(res => {
+                btn.innerText = "💾 Lưu lịch của tôi";
+                btn.disabled = false;
+                if(res.status === 'success') {
+                    alert(res.message);
+                    // Reset checkbox sau khi lưu
+                    document.querySelectorAll('.days-grid input').forEach(cb => cb.checked = false);
+                    document.getElementById('hoTen').selectedIndex = 0;
+                } else { alert("Lỗi: " + res.message); }
+            }).catch(() => {
+                alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch của tôi"; btn.disabled = false;
+            });
+        });
         function initCamera() {
             if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
             const constraints = { video: { facingMode: (useFrontCamera ? "user" : "environment") }, audio: false };
