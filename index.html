@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Điểm danh Thực tập</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3237/3237447.png">
     
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
@@ -518,5 +522,15 @@
         });
         document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
     </script>
+<script>
+        // Kích hoạt Service Worker để biến thành App
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('PWA đã sẵn sàng!'))
+                .catch(err => console.log('Lỗi PWA:', err));
+            });
+        }
+    </script>    
 </body>
 </html>
