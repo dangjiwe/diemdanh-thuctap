@@ -516,7 +516,6 @@
             const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             document.getElementById('admin-date-picker').value = localDate;
         });
-            });
         }
         document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
     </script>
