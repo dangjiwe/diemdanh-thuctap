@@ -150,9 +150,12 @@
                 <button id="send-email-btn" style="flex: 1; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; background-color: #008CBA; color: white;">📧 Gửi Mail Nhắc</button>
             </div>
 
-            <button id="refresh-admin-btn" class="btn-primary" style="width: 100%; margin-bottom: 15px;">🔄 Cập nhật dữ liệu hôm nay</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="date" id="admin-date-picker" style="flex: 2; margin-top: 0; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                <button id="refresh-admin-btn" class="btn-primary" style="flex: 1; margin-top: 0; padding: 10px;">🔍 Tra cứu</button>
+            </div>
             
-            <p style="font-size: 14px;">Tiến độ: <b id="admin-progress" style="color:#4CAF50;">0/0</b></p>
+            <p style="font-size: 14px;">Thống kê ngày: <b id="admin-target-date" style="color:#008CBA;">Hôm nay</b> | Tiến độ: <b id="admin-progress" style="color:#4CAF50;">0/0</b></p>
             
             <div style="background: #fff3f3; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
                 <p style="margin:0 0 5px 0; color: #f44336; font-weight: bold;">⚠️ CHƯA ĐIỂM DANH (<span id="admin-missing-count">0</span>):</p>
@@ -464,12 +467,19 @@
 
         function loadAdminData() {
             const btn = document.getElementById('refresh-admin-btn');
-            btn.innerText = "⏳ Đang tải dữ liệu..."; btn.disabled = true;
+            const dateVal = document.getElementById('admin-date-picker').value; // Lấy ngày YYYY-MM-DD
+            btn.innerText = "⏳ Đang tải..."; btn.disabled = true;
 
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_admin_data" }) })
+            fetch(APPS_SCRIPT_URL, { 
+                method: 'POST', 
+                // Gửi kèm tham số "date" lên Server
+                body: JSON.stringify({ action: "get_admin_data", date: dateVal }) 
+            })
             .then(r => r.json()).then(res => {
-                btn.innerText = "🔄 Cập nhật dữ liệu hôm nay"; btn.disabled = false;
+                btn.innerText = "🔍 Tra cứu"; btn.disabled = false;
                 if(res.status === 'success') {
+                    // Cập nhật tiêu đề ngày đang xem
+                    document.getElementById('admin-target-date').innerText = res.targetDate;
                     document.getElementById('admin-progress').innerText = res.totalCheckedIn + "/" + res.totalExpected;
                     document.getElementById('admin-missing-count').innerText = res.missing.length;
                     
@@ -479,7 +489,7 @@
 
                     const ul = document.getElementById('admin-missing-list');
                     ul.innerHTML = ""; 
-                    if (res.missing.length === 0) ul.innerHTML = "<li style='color:green;'>Đủ quân số!</li>";
+                    if (res.missing.length === 0) ul.innerHTML = "<li style='color:green;'>Đủ quân số hoặc không có lịch!</li>";
                     else res.missing.forEach(name => { let li = document.createElement('li'); li.innerText = name; ul.appendChild(li); });
 
                     const tbody = document.getElementById('admin-checkedin-table');
@@ -495,6 +505,17 @@
                         tbody.appendChild(tr);
                     });
                 }
+            });
+        }
+        document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
+
+        // Đặt giá trị mặc định cho thanh chọn ngày là ngày hôm nay khi mở Tab Admin
+        document.getElementById('tab-admin').addEventListener('click', function() {
+            const today = new Date();
+            // Điều chỉnh múi giờ cho chuẩn hiển thị
+            const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            document.getElementById('admin-date-picker').value = localDate;
+        });
             });
         }
         document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
