@@ -292,16 +292,18 @@
             const btnSave = document.getElementById('save-schedule-btn');
             const days = ['d2', 'd3', 'd4', 'd5', 'd6', 'd7', 'cn'];
             
+            // Reset lại toàn bộ ô tick mỗi khi đổi tên hoặc đổi tuần
             days.forEach(id => {
                 const cb = document.getElementById(id);
                 cb.checked = false; 
+                cb.disabled = false; // Mở khóa
+                cb.parentElement.style.opacity = "1"; // Sáng lại bình thường
             });
 
             btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
 
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
-                // Gửi thêm thông số week lên Server
                 body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week })
             }).then(r => r.json()).then(res => {
                 btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
@@ -309,7 +311,11 @@
                     const sched = res.schedule; 
                     days.forEach((id, index) => {
                         const cb = document.getElementById(id);
-                        cb.checked = (sched[index] === "X"); // Đánh dấu lịch cũ, vẫn cho phép chỉnh sửa
+                        if (sched[index] === "X") { 
+                            cb.checked = true; 
+                            cb.disabled = true; // KHÓA LẠI KHÔNG CHO HỦY
+                            cb.parentElement.style.opacity = "0.5"; // LÀM MỜ ĐI
+                        }
                     });
                 }
             }).catch(() => { btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; });
