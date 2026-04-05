@@ -10,6 +10,9 @@
     <meta name="theme-color" content="#4CAF50">
     <link rel="apple-touch-icon" href="logo-truong.png">
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
         
@@ -23,7 +26,7 @@
         .tab-btn.active { background: #4CAF50; color: white; }
 
         #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; display: none; }
-        select, button { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
+        select, button, input[type="date"] { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
         
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
@@ -34,10 +37,8 @@
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
 
-        #schedule-panel 
-        <h3 style="margin-top:0; color:#4CAF50;">Đăng ký lịch cho tuần tới</h3>
-        <p id="week-label" style="font-weight:bold; color:#008CBA;"></p>
-        { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        /* ĐÃ DỌN DẸP SẠCH LỖI CODE HTML NẰM TRONG CSS Ở ĐÂY */
+        #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
         .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
         .day-item input { width: 20px; height: 20px; margin-right: 10px; margin-top: 0; }
@@ -117,7 +118,7 @@
             </div>
 
             <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
-            <video id="camera-stream" autoplay playsinline></video>
+            <video id="camera-stream" autoplay playsinline muted></video>
             <canvas id="preview-canvas"></canvas>
             
             <div id="active-camera-controls">
@@ -135,7 +136,8 @@
         </div>
 
         <div id="schedule-panel">
-            <h3 style="margin-top:0; color:#4CAF50;">Lịch thực tập tuần này</h3>
+            <h3 style="margin-top:0; color:#4CAF50;">Đăng ký lịch cho tuần tới</h3>
+            <p id="week-label" style="font-weight:bold; color:#008CBA;">Đang tải...</p>
             <p style="font-size:14px; color:#555;">Tích vào những ngày bạn sẽ lên trường:</p>
             <div class="days-grid">
                 <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label>
@@ -188,10 +190,9 @@
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
         let currentGoogleEmail = "";
         
-        // --- THAY GMAIL CỦA ĐĂNG VÀO ĐÂY ĐỂ NHẬN QUYỀN ADMIN ---
         const ADMIN_EMAIL = 'dangphamdbk@gmail.com'; 
         
-        let isGlobalGpsRequired = true; // Biến ghi nhớ trạng thái GPS toàn cục
+        let isGlobalGpsRequired = true;
 
         window.onload = function() {
             const savedEmail = localStorage.getItem('student_email');
@@ -217,7 +218,6 @@
                 document.getElementById('tab-admin').style.display = 'block';
             }
 
-            // Mở app lên là phải gọi Server hỏi xem Admin có đang bắt bật GPS không
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST', body: JSON.stringify({ action: "get_settings" })
             }).then(r => r.json()).then(res => {
@@ -401,10 +401,9 @@
             
             submitBtn.disabled = true; retakeBtn.disabled = true;
             
-            // XỬ LÝ NHẢY CÓC NẾU ADMIN ĐÃ TẮT GPS
             if (!isGlobalGpsRequired) {
                 loadingText.innerText = "🚀 Bỏ qua GPS, đang gửi dữ liệu...";
-                sendDataToServer(hoTen, 0, 0); // Gửi tọa độ ảo 0,0
+                sendDataToServer(hoTen, 0, 0); 
                 return;
             }
 
@@ -435,9 +434,6 @@
             }).catch(() => { alert('Lỗi mạng!'); clearInterval(progressInterval); resetButtons(); });
         }
 
-        // ==========================================
-        // KHU VỰC DÀNH RIÊNG CHO ADMIN
-        // ==========================================
         function updateGpsButtonUI(isRequired) {
             const btn = document.getElementById('toggle-gps-btn');
             if (isRequired) {
@@ -475,18 +471,16 @@
 
         function loadAdminData() {
             const btn = document.getElementById('refresh-admin-btn');
-            const dateVal = document.getElementById('admin-date-picker').value; // Lấy ngày YYYY-MM-DD
+            const dateVal = document.getElementById('admin-date-picker').value; 
             btn.innerText = "⏳ Đang tải..."; btn.disabled = true;
 
             fetch(APPS_SCRIPT_URL, { 
                 method: 'POST', 
-                // Gửi kèm tham số "date" lên Server
                 body: JSON.stringify({ action: "get_admin_data", date: dateVal }) 
             })
             .then(r => r.json()).then(res => {
                 btn.innerText = "🔍 Tra cứu"; btn.disabled = false;
                 if(res.status === 'success') {
-                    // Cập nhật tiêu đề ngày đang xem
                     document.getElementById('admin-target-date').innerText = res.targetDate;
                     document.getElementById('admin-progress').innerText = res.totalCheckedIn + "/" + res.totalExpected;
                     document.getElementById('admin-missing-count').innerText = res.missing.length;
@@ -515,19 +509,16 @@
                 }
             });
         }
+        
         document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
 
-        // Đặt giá trị mặc định cho thanh chọn ngày là ngày hôm nay khi mở Tab Admin
         document.getElementById('tab-admin').addEventListener('click', function() {
             const today = new Date();
-            // Điều chỉnh múi giờ cho chuẩn hiển thị
             const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             document.getElementById('admin-date-picker').value = localDate;
         });
-        document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
     </script>
-<script>
-        // Kích hoạt Service Worker để biến thành App
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
@@ -535,6 +526,6 @@
                 .catch(err => console.log('Lỗi PWA:', err));
             });
         }
-    </script>    
+    </script>   
 </body>
 </html>
