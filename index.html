@@ -22,11 +22,11 @@
         .btn-logout { margin-top: 10px; padding: 6px 12px; font-size: 14px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         .tab-menu { display: flex; justify-content: center; margin-bottom: 20px; background: #ddd; border-radius: 8px; overflow: hidden; max-width: 400px; margin: 0 auto 20px; }
-        .tab-btn { flex: 1; padding: 12px; font-weight: bold; border: none; cursor: pointer; background: transparent; transition: 0.3s; }
+        .tab-btn { flex: 1; padding: 10px 5px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; background: transparent; transition: 0.3s; }
         .tab-btn.active { background: #4CAF50; color: white; }
 
         #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; display: none; }
-        select, button, input[type="date"] { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
+        select, button, input[type="date"], input[type="number"] { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
         
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
@@ -37,7 +37,7 @@
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
 
-        #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        #schedule-panel, #dugio-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
         .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
         .day-item input { width: 20px; height: 20px; margin-right: 10px; margin-top: 0; }
@@ -70,7 +70,8 @@
         
         <div class="tab-menu">
             <button id="tab-checkin" class="tab-btn active" onclick="switchTab('checkin')">📍 Điểm danh</button>
-            <button id="tab-schedule" class="tab-btn" onclick="switchTab('schedule')">🗓️ Đăng ký lịch</button>
+            <button id="tab-schedule" class="tab-btn" onclick="switchTab('schedule')">🗓️ Đăng ký</button>
+            <button id="tab-dugio" class="tab-btn" onclick="switchTab('dugio')">📚 Thống kê</button>
             <button id="tab-admin" class="tab-btn" onclick="switchTab('admin')" style="display: none; background: #673ab7; color: white;">👑 Admin</button>
         </div>
 
@@ -138,7 +139,7 @@
             <h3 style="margin-top:0; color:#4CAF50;">📅 Đăng ký lịch thực tập</h3>
             
             <p style="margin-bottom:5px; font-weight:bold; font-size: 14px; text-align: left;">1. Chọn tuần cần đăng ký:</p>
-            <select id="week-selector" style="background:#e8f5e9; border: 2px solid #4CAF50; margin-top: 0;"></select>
+            <select id="week-selector" style="background:#e8f5e9; border: 2px solid #4CAF50; margin-top: 0; width: 100%;"></select>
 
             <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; text-align: left;">2. Tích chọn ngày đi trường:</p>
             <div class="days-grid">
@@ -151,6 +152,24 @@
                 <label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
             </div>
             <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu lịch tuần này</button>
+        </div>
+
+        <div id="dugio-panel" style="text-align: left;">
+            <h3 style="margin-top:0; color:#008CBA; text-align: center;">📚 Thống kê Số tiết</h3>
+            
+            <p style="margin-bottom:5px; font-weight:bold; font-size: 14px;">1. Chọn tuần báo cáo:</p>
+            <select id="dugio-week-selector" style="background:#e1f5fe; border: 2px solid #008CBA; margin-top: 0; width: 100%;"></select>
+            
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#d84315;">2. Sinh hoạt chủ nhiệm:</p>
+            <input type="number" id="input-shcn" placeholder="Nhập số (VD: 1)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#2e7d32;">3. Hoạt động giáo dục:</p>
+            <input type="number" id="input-hdgd" placeholder="Nhập số (VD: 2)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#1565c0;">4. Dự giờ:</p>
+            <input type="number" id="input-dugio" placeholder="Nhập số (VD: 4)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
+            <button id="save-dugio-btn" class="btn-action" style="margin-top:20px; width: 100%; background-color:#008CBA;">🚀 Lưu thống kê</button>
         </div>
 
         <div id="admin-panel" style="display: none; max-width: 400px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; text-align: left;">
@@ -253,10 +272,11 @@
         }
 
         // ===============================================
-        // HÀM MỚI: TẢI DANH SÁCH CÁC TUẦN VÀO DROPDOWN
+        // TẢI MENU TUẦN CHO ĐĂNG KÝ LỊCH
         // ===============================================
         function loadWeekOptions() {
             const selector = document.getElementById('week-selector');
+            if(selector.options.length > 0) return; // Nếu đã tải rồi thì không tải lại
             selector.innerHTML = "<option value=''>⌛ Đang tải các tuần...</option>";
             
             fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) })
@@ -272,7 +292,6 @@
                         opt.value = w; opt.innerText = "Tuần từ: " + w;
                         selector.appendChild(opt);
                     });
-                    // Sau khi tải xong menu Tuần thì gọi hàm tải Lịch
                     loadCurrentSchedule();
                 }
             }).catch(e => {
@@ -281,7 +300,25 @@
         }
 
         // ===============================================
-        // CẬP NHẬT HÀM TẢI LỊCH (Đọc Tuần từ Dropdown)
+        // TẢI MENU TUẦN CHO DỰ GIỜ (ĐỌC DÒNG 1 SHEET ĐBK)
+        // ===============================================
+        function loadDuGioWeeks() {
+            const selDuGio = document.getElementById('dugio-week-selector');
+            if (selDuGio.options.length > 0) return; 
+            selDuGio.innerHTML = "<option value=''>⌛ Đang tải...</option>";
+            
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data" }) })
+            .then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    let opts = "<option value=''>-- Chọn tuần --</option>"; 
+                    res.weeks.forEach(w => { opts += `<option value="${w}">${w}</option>`; });
+                    selDuGio.innerHTML = opts; 
+                }
+            });
+        }
+
+        // ===============================================
+        // HÀM TẢI LỊCH (Đọc Tuần từ Dropdown)
         // ===============================================
         function loadCurrentSchedule() {
             const hoTen = document.getElementById('hoTen').value;
@@ -292,12 +329,11 @@
             const btnSave = document.getElementById('save-schedule-btn');
             const days = ['d2', 'd3', 'd4', 'd5', 'd6', 'd7', 'cn'];
             
-            // Reset lại toàn bộ ô tick mỗi khi đổi tên hoặc đổi tuần
             days.forEach(id => {
                 const cb = document.getElementById(id);
                 cb.checked = false; 
-                cb.disabled = false; // Mở khóa
-                cb.parentElement.style.opacity = "1"; // Sáng lại bình thường
+                cb.disabled = false; 
+                cb.parentElement.style.opacity = "1"; 
             });
 
             btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
@@ -313,30 +349,68 @@
                         const cb = document.getElementById(id);
                         if (sched[index] === "X") { 
                             cb.checked = true; 
-                            cb.disabled = true; // KHÓA LẠI KHÔNG CHO HỦY
-                            cb.parentElement.style.opacity = "0.5"; // LÀM MỜ ĐI
+                            cb.disabled = true; 
+                            cb.parentElement.style.opacity = "0.5"; 
                         }
                     });
                 }
             }).catch(() => { btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; });
         }
 
-        // Lắng nghe sự kiện đổi Tên hoặc đổi Tuần
+        // ===============================================
+        // HÀM TẢI DỮ LIỆU DỰ GIỜ CŨ LÊN 3 Ô
+        // ===============================================
+        function fetchDuGioValue() {
+            const hoTen = document.getElementById('hoTen').value;
+            const weekLabel = document.getElementById('dugio-week-selector').value;
+            const iShcn = document.getElementById('input-shcn');
+            const iHdgd = document.getElementById('input-hdgd');
+            const iDugio = document.getElementById('input-dugio');
+
+            if (!hoTen || !weekLabel || document.getElementById('dugio-panel').style.display === 'none') {
+                iShcn.value = ""; iHdgd.value = ""; iDugio.value = "";
+                return;
+            }
+            
+            iShcn.value = "⏳..."; iHdgd.value = "⏳..."; iDugio.value = "⏳...";
+            iShcn.disabled = true; iHdgd.disabled = true; iDugio.disabled = true;
+
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data", hoTen: hoTen, weekLabel: weekLabel }) })
+            .then(r => r.json()).then(res => {
+                iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false;
+                if(res.status === 'success') {
+                    iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio;
+                } else {
+                    iShcn.value = ""; iHdgd.value = ""; iDugio.value = "";
+                }
+            }).catch(() => {
+                iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false;
+                iShcn.value = ""; iHdgd.value = ""; iDugio.value = "";
+            });
+        }
+
+        // ===============================================
+        // LẮNG NGHE ĐỔI TÊN HOẶC ĐỔI TUẦN
+        // ===============================================
         document.getElementById('hoTen').addEventListener('change', function() {
             const selectedName = this.value;
             if (selectedName) localStorage.setItem('student_name', selectedName);
             else localStorage.removeItem('student_name'); 
             loadCurrentSchedule();
+            fetchDuGioValue();
         });
         document.getElementById('week-selector').addEventListener('change', loadCurrentSchedule);
+        document.getElementById('dugio-week-selector').addEventListener('change', fetchDuGioValue);
 
         function switchTab(tabName) {
             document.getElementById('checkin-panel').style.display = 'none';
             document.getElementById('schedule-panel').style.display = 'none';
+            document.getElementById('dugio-panel').style.display = 'none';
             document.getElementById('admin-panel').style.display = 'none';
             
             document.getElementById('tab-checkin').classList.remove('active');
             document.getElementById('tab-schedule').classList.remove('active');
+            document.getElementById('tab-dugio').classList.remove('active');
             if(document.getElementById('tab-admin')) document.getElementById('tab-admin').classList.remove('active');
 
             if (tabName === 'checkin') {
@@ -345,7 +419,11 @@
             } else if (tabName === 'schedule') {
                 document.getElementById('schedule-panel').style.display = 'block';
                 document.getElementById('tab-schedule').classList.add('active');
-                loadWeekOptions(); // Thay vì gọi loadCurrentSchedule, giờ mình gọi loadWeekOptions trước
+                loadWeekOptions(); 
+            } else if (tabName === 'dugio') {
+                document.getElementById('dugio-panel').style.display = 'block';
+                document.getElementById('tab-dugio').classList.add('active');
+                loadDuGioWeeks(); 
             } else if (tabName === 'admin') {
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('tab-admin').classList.add('active');
@@ -354,7 +432,7 @@
         }
 
         // ===============================================
-        // CẬP NHẬT HÀM LƯU LỊCH (Gửi kèm thông số Tuần)
+        // LƯU LỊCH THỰC TẬP
         // ===============================================
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
             const hoTen = document.getElementById('hoTen').value;
@@ -382,6 +460,32 @@
             }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; });
         });
 
+        // ===============================================
+        // LƯU 3 CỘT THỐNG KÊ
+        // ===============================================
+        document.getElementById('save-dugio-btn').addEventListener('click', function() {
+            const hoTen = document.getElementById('hoTen').value;
+            const weekLabel = document.getElementById('dugio-week-selector').value;
+            const shcn = document.getElementById('input-shcn').value;
+            const hdgd = document.getElementById('input-hdgd').value;
+            const dugio = document.getElementById('input-dugio').value;
+            
+            if (!hoTen) { alert("Bạn phải chọn Tên ở phía trên trước!"); return; }
+            if (!weekLabel) { alert("Chưa chọn tuần!"); return; }
+
+            const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
+            
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST', 
+                body: JSON.stringify({ action: "submit_du_gio", hoTen: hoTen, weekLabel: weekLabel, shcn: shcn, hdgd: hdgd, dugio: dugio })
+            }).then(r => r.json()).then(res => {
+                btn.innerText = "🚀 Lưu thống kê"; btn.disabled = false;
+                if(res.status === 'success') { alert(res.message); } 
+                else { alert("Lỗi: " + res.message); }
+            }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "🚀 Lưu thống kê"; btn.disabled = false; });
+        });
+
+        // CÁC HÀM CAMERA VÀ ADMIN GIỮ NGUYÊN
         const video = document.getElementById('camera-stream');
         const canvas = document.getElementById('preview-canvas');
         const startCameraBtn = document.getElementById('start-camera-btn');
