@@ -37,7 +37,6 @@
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
 
-        /* ĐÃ DỌN DẸP SẠCH LỖI CODE HTML NẰM TRONG CSS Ở ĐÂY */
         #schedule-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
         .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
@@ -136,9 +135,12 @@
         </div>
 
         <div id="schedule-panel">
-            <h3 style="margin-top:0; color:#4CAF50;">Đăng ký lịch cho tuần tới</h3>
-            <p id="week-label" style="font-weight:bold; color:#008CBA;">Đang tải...</p>
-            <p style="font-size:14px; color:#555;">Tích vào những ngày bạn sẽ lên trường:</p>
+            <h3 style="margin-top:0; color:#4CAF50;">📅 Đăng ký lịch thực tập</h3>
+            
+            <p style="margin-bottom:5px; font-weight:bold; font-size: 14px; text-align: left;">1. Chọn tuần cần đăng ký:</p>
+            <select id="week-selector" style="background:#e8f5e9; border: 2px solid #4CAF50; margin-top: 0;"></select>
+
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; text-align: left;">2. Tích chọn ngày đi trường:</p>
             <div class="days-grid">
                 <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label>
                 <label class="day-item"><input type="checkbox" id="d3" value="X"> Thứ 3</label>
@@ -148,7 +150,7 @@
                 <label class="day-item"><input type="checkbox" id="d7" value="X"> Thứ 7</label>
                 <label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
             </div>
-            <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu bổ sung lịch</button>
+            <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu lịch tuần này</button>
         </div>
 
         <div id="admin-panel" style="display: none; max-width: 400px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; text-align: left;">
@@ -189,9 +191,7 @@
     <script>
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG0woemJu7h_cXbdl0RAbwReeYIMBxw6uB5x73-NnEigBifTXc1jU2G7EZvWUY2G2P/exec'; 
         let currentGoogleEmail = "";
-        
         const ADMIN_EMAIL = 'dangphamdbk@gmail.com'; 
-        
         let isGlobalGpsRequired = true;
 
         window.onload = function() {
@@ -252,42 +252,77 @@
             }
         }
 
+        // ===============================================
+        // HÀM MỚI: TẢI DANH SÁCH CÁC TUẦN VÀO DROPDOWN
+        // ===============================================
+        function loadWeekOptions() {
+            const selector = document.getElementById('week-selector');
+            selector.innerHTML = "<option value=''>⌛ Đang tải các tuần...</option>";
+            
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) })
+            .then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    selector.innerHTML = "";
+                    if (res.weeks.length === 0) {
+                        selector.innerHTML = "<option value=''>Chưa có dữ liệu tuần từ Admin</option>";
+                        return;
+                    }
+                    res.weeks.forEach(w => {
+                        let opt = document.createElement('option');
+                        opt.value = w; opt.innerText = "Tuần từ: " + w;
+                        selector.appendChild(opt);
+                    });
+                    // Sau khi tải xong menu Tuần thì gọi hàm tải Lịch
+                    loadCurrentSchedule();
+                }
+            }).catch(e => {
+                selector.innerHTML = "<option value=''>Lỗi tải dữ liệu</option>";
+            });
+        }
+
+        // ===============================================
+        // CẬP NHẬT HÀM TẢI LỊCH (Đọc Tuần từ Dropdown)
+        // ===============================================
         function loadCurrentSchedule() {
             const hoTen = document.getElementById('hoTen').value;
-            if (!hoTen || document.getElementById('schedule-panel').style.display === 'none') return; 
+            const week = document.getElementById('week-selector').value;
+            
+            if (!hoTen || document.getElementById('schedule-panel').style.display === 'none' || !week) return; 
 
             const btnSave = document.getElementById('save-schedule-btn');
             const days = ['d2', 'd3', 'd4', 'd5', 'd6', 'd7', 'cn'];
             
             days.forEach(id => {
                 const cb = document.getElementById(id);
-                cb.checked = false; cb.disabled = false; cb.parentElement.style.opacity = "1";
+                cb.checked = false; 
             });
 
-            btnSave.innerText = "⏳ Đang tải lịch cũ..."; btnSave.disabled = true;
+            btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
 
             fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: "get_schedule", hoTen: hoTen })
+                // Gửi thêm thông số week lên Server
+                body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week })
             }).then(r => r.json()).then(res => {
-                btnSave.innerText = "💾 Lưu bổ sung lịch"; btnSave.disabled = false;
+                btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
                 if(res.status === 'success') {
-                    document.getElementById('week-label').innerText = "📅 Tuần bắt đầu từ: " + res.weekLabel;
                     const sched = res.schedule; 
                     days.forEach((id, index) => {
                         const cb = document.getElementById(id);
-                        if (sched[index] === "X") { cb.checked = true; cb.disabled = true; cb.parentElement.style.opacity = "0.5"; }
+                        cb.checked = (sched[index] === "X"); // Đánh dấu lịch cũ, vẫn cho phép chỉnh sửa
                     });
                 }
-            }).catch(() => { btnSave.innerText = "💾 Lưu bổ sung lịch"; btnSave.disabled = false; });
+            }).catch(() => { btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; });
         }
 
+        // Lắng nghe sự kiện đổi Tên hoặc đổi Tuần
         document.getElementById('hoTen').addEventListener('change', function() {
             const selectedName = this.value;
             if (selectedName) localStorage.setItem('student_name', selectedName);
             else localStorage.removeItem('student_name'); 
             loadCurrentSchedule();
         });
+        document.getElementById('week-selector').addEventListener('change', loadCurrentSchedule);
 
         function switchTab(tabName) {
             document.getElementById('checkin-panel').style.display = 'none';
@@ -304,7 +339,7 @@
             } else if (tabName === 'schedule') {
                 document.getElementById('schedule-panel').style.display = 'block';
                 document.getElementById('tab-schedule').classList.add('active');
-                setTimeout(loadCurrentSchedule, 100); 
+                loadWeekOptions(); // Thay vì gọi loadCurrentSchedule, giờ mình gọi loadWeekOptions trước
             } else if (tabName === 'admin') {
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('tab-admin').classList.add('active');
@@ -312,9 +347,15 @@
             }
         }
 
+        // ===============================================
+        // CẬP NHẬT HÀM LƯU LỊCH (Gửi kèm thông số Tuần)
+        // ===============================================
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
             const hoTen = document.getElementById('hoTen').value;
+            const week = document.getElementById('week-selector').value;
+            
             if (!hoTen) { alert("Bạn phải chọn Tên của mình trước!"); return; }
+            if (!week) { alert("Dữ liệu tuần chưa sẵn sàng!"); return; }
 
             const schedule = [
                 document.getElementById('d2').checked ? "X" : "", document.getElementById('d3').checked ? "X" : "",
@@ -326,12 +367,13 @@
             const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
 
             fetch(APPS_SCRIPT_URL, {
-                method: 'POST', body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, schedule: schedule, email: currentGoogleEmail })
+                method: 'POST', 
+                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail })
             }).then(r => r.json()).then(res => {
-                btn.innerText = "💾 Lưu bổ sung lịch"; btn.disabled = false;
+                btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false;
                 if(res.status === 'success') { alert(res.message); loadCurrentSchedule(); } 
                 else { alert("Lỗi: " + res.message); }
-            }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "💾 Lưu bổ sung lịch"; btn.disabled = false; });
+            }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; });
         });
 
         const video = document.getElementById('camera-stream');
