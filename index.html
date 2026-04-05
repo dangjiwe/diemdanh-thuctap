@@ -5,43 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Điểm danh Thực tập</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4CAF50">
     <link rel="apple-touch-icon" href="logo-truong.png">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }
+        
         #login-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; }
         #main-app { display: none; } 
         .user-info { margin-bottom: 20px; font-weight: bold; color: #4CAF50; display: none; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; max-width: 400px; margin: 0 auto 20px;}
         .btn-logout { margin-top: 10px; padding: 6px 12px; font-size: 14px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
         .tab-menu { display: flex; justify-content: center; margin-bottom: 20px; background: #ddd; border-radius: 8px; overflow: hidden; max-width: 400px; margin: 0 auto 20px; }
         .tab-btn { flex: 1; padding: 10px 5px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; background: transparent; transition: 0.3s; }
         .tab-btn.active { background: #4CAF50; color: white; }
+
         #camera-stream, #preview-canvas { width: 100%; max-width: 400px; border-radius: 8px; border: 2px solid #ccc; margin: 10px auto; display: none; }
         select, button, input[type="date"], input[type="number"], input[type="text"] { margin-top: 10px; padding: 12px; font-size: 16px; width: 100%; max-width: 300px; border-radius: 6px; border: 1px solid #aaa; box-sizing: border-box;}
+        
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-action { background-color: #008CBA; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #ff9800; color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-warning { background-color: #f44336; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        
         #active-camera-controls, #review-controls { display: none; margin-top: 10px; }
         #active-camera-controls button, #review-controls button { width: 48%; display: inline-block; margin: 0 1%; }
+
         #schedule-panel, #dugio-panel { display: none; max-width: 350px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         .days-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; text-align: left; }
         .day-item { display: flex; align-items: center; background: #f1f1f1; padding: 10px; border-radius: 5px; cursor: pointer; }
         .day-item input { width: 20px; height: 20px; margin-right: 10px; margin-top: 0; }
+        
         #progress-container { width: 100%; max-width: 300px; margin: 15px auto; background-color: #ddd; border-radius: 13px; display: none; }
         #progress-bar { width: 0%; height: 20px; background-color: #4CAF50; border-radius: 13px; transition: width 0.4s ease; }
         #loading-text { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; display: none; }
     </style>
 </head>
 <body>
+
     <div id="login-panel">
         <h2 style="color: #4CAF50;">Hệ thống Quản lý Thực tập</h2>
         <p>Vui lòng đăng nhập bằng Gmail của bạn</p>
-        <div id="g_id_onload" data-client_id="659967368152-b0lh488eled9lob2gfolerqe8k5eq0u7.apps.googleusercontent.com" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
+        
+        <div id="g_id_onload"
+             data-client_id="659967368152-b0lh488eled9lob2gfolerqe8k5eq0u7.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false">
+        </div>
         <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"></div>
     </div>
 
@@ -51,6 +67,7 @@
     </div>
 
     <div id="main-app">
+        
         <div class="tab-menu">
             <button id="tab-checkin" class="tab-btn active" onclick="switchTab('checkin')">📍 Điểm danh</button>
             <button id="tab-schedule" class="tab-btn" onclick="switchTab('schedule')">🗓️ Đăng ký</button>
@@ -96,33 +113,62 @@
         </select>
 
         <div id="checkin-panel">
-            <div id="gps-status-banner" style="display:none; background:#ffeb3b; color:#333; padding:5px; border-radius:5px; font-size:13px; margin-bottom:10px; font-weight:bold;">⚡ Chế độ GPS đang TẮT (Không yêu cầu định vị)</div>
+            <div id="gps-status-banner" style="display:none; background:#ffeb3b; color:#333; padding:5px; border-radius:5px; font-size:13px; margin-bottom:10px; font-weight:bold;">
+                ⚡ Chế độ GPS đang TẮT (Không yêu cầu định vị)
+            </div>
+
             <button id="start-camera-btn" class="btn-primary">📷 Bật Camera</button>
             <video id="camera-stream" autoplay playsinline muted></video>
             <canvas id="preview-canvas"></canvas>
-            <div id="active-camera-controls"><button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button><button id="capture-btn" class="btn-action">📸 Chụp ảnh</button></div>
-            <div id="review-controls"><button id="retake-btn" class="btn-warning">✖️ Chụp lại</button><button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button></div>
-            <div id="progress-container"><div id="progress-bar"></div></div><div id="loading-text">Đang xử lý...</div>
+            
+            <div id="active-camera-controls">
+                <button id="switch-camera-btn" class="btn-secondary">🔄 Đổi Cam</button>
+                <button id="capture-btn" class="btn-action">📸 Chụp ảnh</button>
+            </div>
+
+            <div id="review-controls">
+                <button id="retake-btn" class="btn-warning">✖️ Chụp lại</button>
+                <button id="submit-btn" class="btn-primary">✅ Gửi Điểm danh</button>
+            </div>
+            
+            <div id="progress-container"><div id="progress-bar"></div></div>
+            <div id="loading-text">Đang xử lý...</div>
         </div>
 
         <div id="schedule-panel">
             <h3 style="margin-top:0; color:#4CAF50;">📅 Đăng ký lịch thực tập</h3>
+            
             <p style="margin-bottom:5px; font-weight:bold; font-size: 14px; text-align: left;">1. Chọn tuần cần đăng ký:</p>
             <select id="week-selector" style="background:#e8f5e9; border: 2px solid #4CAF50; margin-top: 0; width: 100%;"></select>
+
             <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; text-align: left;">2. Tích chọn ngày đi trường:</p>
             <div class="days-grid">
-                <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label><label class="day-item"><input type="checkbox" id="d3" value="X"> Thứ 3</label><label class="day-item"><input type="checkbox" id="d4" value="X"> Thứ 4</label><label class="day-item"><input type="checkbox" id="d5" value="X"> Thứ 5</label><label class="day-item"><input type="checkbox" id="d6" value="X"> Thứ 6</label><label class="day-item"><input type="checkbox" id="d7" value="X"> Thứ 7</label><label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
+                <label class="day-item"><input type="checkbox" id="d2" value="X"> Thứ 2</label>
+                <label class="day-item"><input type="checkbox" id="d3" value="X"> Thứ 3</label>
+                <label class="day-item"><input type="checkbox" id="d4" value="X"> Thứ 4</label>
+                <label class="day-item"><input type="checkbox" id="d5" value="X"> Thứ 5</label>
+                <label class="day-item"><input type="checkbox" id="d6" value="X"> Thứ 6</label>
+                <label class="day-item"><input type="checkbox" id="d7" value="X"> Thứ 7</label>
+                <label class="day-item" style="grid-column: span 2; justify-content:center;"><input type="checkbox" id="cn" value="X"> Chủ Nhật</label>
             </div>
             <button id="save-schedule-btn" class="btn-primary" style="margin-top:20px;">💾 Lưu lịch tuần này</button>
         </div>
 
         <div id="dugio-panel" style="text-align: left;">
             <h3 style="margin-top:0; color:#008CBA; text-align: center;">📚 Thống kê Số tiết</h3>
+            
             <p style="margin-bottom:5px; font-weight:bold; font-size: 14px;">1. Chọn tuần báo cáo:</p>
             <select id="dugio-week-selector" style="background:#e1f5fe; border: 2px solid #008CBA; margin-top: 0; width: 100%;"></select>
-            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#1565c0;">2. Dự giờ:</p><input type="number" id="input-dugio" placeholder="Nhập số (VD: 4)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
-            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#d84315;">3. Sinh hoạt chủ nhiệm:</p><input type="number" id="input-shcn" placeholder="Nhập số (VD: 1)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
-            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#2e7d32;">4. Hoạt động giáo dục:</p><input type="number" id="input-hdgd" placeholder="Nhập số (VD: 2)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#1565c0;">2. Dự giờ:</p>
+            <input type="number" id="input-dugio" placeholder="Nhập số (VD: 4)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#d84315;">3. Sinh hoạt chủ nhiệm:</p>
+            <input type="number" id="input-shcn" placeholder="Nhập số (VD: 1)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
+            <p style="margin: 15px 0 5px 0; font-weight:bold; font-size: 14px; color:#2e7d32;">4. Hoạt động giáo dục:</p>
+            <input type="number" id="input-hdgd" placeholder="Nhập số (VD: 2)" style="width:100%; border: 1px solid #ccc; font-size:16px; padding:10px; border-radius: 5px;">
+            
             <button id="save-dugio-btn" class="btn-action" style="margin-top:20px; width: 100%; background-color:#008CBA;">🚀 Lưu thống kê</button>
         </div>
 
@@ -141,7 +187,7 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <select id="admin-status" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-top: 0; background: white;">
                         <option value="absent">❌ Vắng</option>
-                        <option value="present">✅ Điểm danh</option>
+                        <option value="present">✅ Bổ sung</option>
                     </select>
                     <input type="text" id="admin-reason" placeholder="Lý do (Bệnh, Xin phép...)" style="flex: 1.5; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-top: 0;">
                 </div>
@@ -172,6 +218,7 @@
                 <tbody id="admin-checkedin-table"></tbody>
             </table>
         </div>
+
     </div>
 
     <script>
@@ -181,7 +228,7 @@
         let isGlobalGpsRequired = true;
 
         window.onload = function() {
-            // Copy danh sách tên qua cho Admin chọn
+            // Tự động copy danh sách tên xuống mục Admin để khỏi gõ tay
             document.getElementById('admin-target-name').innerHTML = document.getElementById('hoTen').innerHTML;
 
             const savedEmail = localStorage.getItem('student_email');
@@ -207,116 +254,371 @@
                 document.getElementById('tab-admin').style.display = 'block';
             }
 
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_settings" }) }).then(r => r.json()).then(res => {
-                if(res.status === 'success') { isGlobalGpsRequired = res.gpsRequired; document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block'; }
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST', body: JSON.stringify({ action: "get_settings" })
+            }).then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    isGlobalGpsRequired = res.gpsRequired;
+                    document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block';
+                }
             });
         }
 
-        function decodeJwtResponse(token) { let b = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(atob(b).split('').map(function(c) { return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2); }).join(''))); }
-        function handleCredentialResponse(response) { currentGoogleEmail = decodeJwtResponse(response.credential).email; localStorage.setItem('student_email', currentGoogleEmail); showMainApp(currentGoogleEmail); }
-        function logoutGoogle() { if(confirm("Đăng xuất?")) { localStorage.removeItem('student_email'); localStorage.removeItem('student_name'); window.location.reload(); } }
+        function decodeJwtResponse(token) {
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function handleCredentialResponse(response) {
+            const responsePayload = decodeJwtResponse(response.credential);
+            currentGoogleEmail = responsePayload.email; 
+            localStorage.setItem('student_email', currentGoogleEmail);
+            showMainApp(currentGoogleEmail);
+        }
+
+        function logoutGoogle() {
+            if(confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                localStorage.removeItem('student_email');
+                localStorage.removeItem('student_name'); 
+                window.location.reload();
+            }
+        }
 
         function loadWeekOptions() {
             const selector = document.getElementById('week-selector');
             if(selector.options.length > 0) return; 
             selector.innerHTML = "<option value=''>⌛ Đang tải các tuần...</option>";
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) }).then(r => r.json()).then(res => {
+            
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) })
+            .then(r => r.json()).then(res => {
                 if(res.status === 'success') {
                     selector.innerHTML = "";
-                    if (res.weeks.length === 0) { selector.innerHTML = "<option value=''>Chưa có dữ liệu</option>"; return; }
-                    res.weeks.forEach(w => { let opt = document.createElement('option'); opt.value = w; opt.innerText = "Tuần từ: " + w; selector.appendChild(opt); });
+                    if (res.weeks.length === 0) {
+                        selector.innerHTML = "<option value=''>Chưa có dữ liệu tuần từ Admin</option>";
+                        return;
+                    }
+                    res.weeks.forEach(w => {
+                        let opt = document.createElement('option');
+                        opt.value = w; opt.innerText = "Tuần từ: " + w;
+                        selector.appendChild(opt);
+                    });
                     loadCurrentSchedule();
                 }
-            }).catch(e => { selector.innerHTML = "<option value=''>Lỗi tải dữ liệu</option>"; });
+            }).catch(e => {
+                selector.innerHTML = "<option value=''>Lỗi tải dữ liệu</option>";
+            });
         }
 
         function loadDuGioWeeks() {
             const selDuGio = document.getElementById('dugio-week-selector');
             if (selDuGio.options.length > 0) return; 
             selDuGio.innerHTML = "<option value=''>⌛ Đang tải...</option>";
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data" }) }).then(r => r.json()).then(res => {
+            
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data" }) })
+            .then(r => r.json()).then(res => {
                 if(res.status === 'success') {
                     let opts = "<option value=''>-- Chọn tuần --</option>"; 
-                    res.weeks.forEach(w => { opts += `<option value="${w}">${w}</option>`; }); selDuGio.innerHTML = opts; 
+                    res.weeks.forEach(w => { opts += `<option value="${w}">${w}</option>`; });
+                    selDuGio.innerHTML = opts; 
                 }
             });
         }
 
         function loadCurrentSchedule() {
-            const hoTen = document.getElementById('hoTen').value; const week = document.getElementById('week-selector').value;
+            const hoTen = document.getElementById('hoTen').value;
+            const week = document.getElementById('week-selector').value;
+            
             if (!hoTen || document.getElementById('schedule-panel').style.display === 'none' || !week) return; 
-            const btnSave = document.getElementById('save-schedule-btn'); const days = ['d2', 'd3', 'd4', 'd5', 'd6', 'd7', 'cn'];
-            days.forEach(id => { const cb = document.getElementById(id); cb.checked = false; cb.disabled = false; cb.parentElement.style.opacity = "1"; });
+
+            const btnSave = document.getElementById('save-schedule-btn');
+            const days = ['d2', 'd3', 'd4', 'd5', 'd6', 'd7', 'cn'];
+            
+            days.forEach(id => {
+                const cb = document.getElementById(id);
+                cb.checked = false; 
+                cb.disabled = false; 
+                cb.parentElement.style.opacity = "1"; 
+            });
+
             btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week }) }).then(r => r.json()).then(res => {
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week })
+            }).then(r => r.json()).then(res => {
                 btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
-                if(res.status === 'success') { const sched = res.schedule; days.forEach((id, index) => { const cb = document.getElementById(id); if (sched[index] === "X") { cb.checked = true; cb.disabled = true; cb.parentElement.style.opacity = "0.5"; } }); }
+                if(res.status === 'success') {
+                    const sched = res.schedule; 
+                    days.forEach((id, index) => {
+                        const cb = document.getElementById(id);
+                        if (sched[index] === "X") { 
+                            cb.checked = true; 
+                            cb.disabled = true; 
+                            cb.parentElement.style.opacity = "0.5"; 
+                        }
+                    });
+                }
             }).catch(() => { btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; });
         }
 
         function fetchDuGioValue() {
-            const hoTen = document.getElementById('hoTen').value; const weekLabel = document.getElementById('dugio-week-selector').value;
-            const iShcn = document.getElementById('input-shcn'); const iHdgd = document.getElementById('input-hdgd'); const iDugio = document.getElementById('input-dugio');
-            if (!hoTen || !weekLabel || document.getElementById('dugio-panel').style.display === 'none') { iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; return; }
-            iShcn.value = "⏳..."; iHdgd.value = "⏳..."; iDugio.value = "⏳..."; iShcn.disabled = true; iHdgd.disabled = true; iDugio.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data", hoTen: hoTen, weekLabel: weekLabel }) }).then(r => r.json()).then(res => {
+            const hoTen = document.getElementById('hoTen').value;
+            const weekLabel = document.getElementById('dugio-week-selector').value;
+            const iShcn = document.getElementById('input-shcn');
+            const iHdgd = document.getElementById('input-hdgd');
+            const iDugio = document.getElementById('input-dugio');
+
+            if (!hoTen || !weekLabel || document.getElementById('dugio-panel').style.display === 'none') {
+                iShcn.value = ""; iHdgd.value = ""; iDugio.value = "";
+                return;
+            }
+            
+            iShcn.value = "⏳..."; iHdgd.value = "⏳..."; iDugio.value = "⏳...";
+            iShcn.disabled = true; iHdgd.disabled = true; iDugio.disabled = true;
+
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data", hoTen: hoTen, weekLabel: weekLabel }) })
+            .then(r => r.json()).then(res => {
                 iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false;
-                if(res.status === 'success') { iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio; } else { iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; }
-            }).catch(() => { iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false; iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; });
+                if(res.status === 'success') {
+                    iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio;
+                } else {
+                    iShcn.value = ""; iHdgd.value = ""; iDugio.value = "";
+                }
+            }).catch(() => {
+                iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false;
+                iShcn.value = ""; iHdgd.value = ""; iDugio.value = "";
+            });
         }
 
-        document.getElementById('hoTen').addEventListener('change', function() { const selectedName = this.value; if (selectedName) localStorage.setItem('student_name', selectedName); else localStorage.removeItem('student_name'); loadCurrentSchedule(); fetchDuGioValue(); });
+        document.getElementById('hoTen').addEventListener('change', function() {
+            const selectedName = this.value;
+            if (selectedName) localStorage.setItem('student_name', selectedName);
+            else localStorage.removeItem('student_name'); 
+            loadCurrentSchedule();
+            fetchDuGioValue();
+        });
         document.getElementById('week-selector').addEventListener('change', loadCurrentSchedule);
         document.getElementById('dugio-week-selector').addEventListener('change', fetchDuGioValue);
 
         function switchTab(tabName) {
-            document.getElementById('checkin-panel').style.display = 'none'; document.getElementById('schedule-panel').style.display = 'none'; document.getElementById('dugio-panel').style.display = 'none'; document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('tab-checkin').classList.remove('active'); document.getElementById('tab-schedule').classList.remove('active'); document.getElementById('tab-dugio').classList.remove('active'); if(document.getElementById('tab-admin')) document.getElementById('tab-admin').classList.remove('active');
+            document.getElementById('checkin-panel').style.display = 'none';
+            document.getElementById('schedule-panel').style.display = 'none';
+            document.getElementById('dugio-panel').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
+            
+            document.getElementById('tab-checkin').classList.remove('active');
+            document.getElementById('tab-schedule').classList.remove('active');
+            document.getElementById('tab-dugio').classList.remove('active');
+            if(document.getElementById('tab-admin')) document.getElementById('tab-admin').classList.remove('active');
 
-            if (tabName === 'checkin') { document.getElementById('checkin-panel').style.display = 'block'; document.getElementById('tab-checkin').classList.add('active'); } 
-            else if (tabName === 'schedule') { document.getElementById('schedule-panel').style.display = 'block'; document.getElementById('tab-schedule').classList.add('active'); loadWeekOptions(); } 
-            else if (tabName === 'dugio') { document.getElementById('dugio-panel').style.display = 'block'; document.getElementById('tab-dugio').classList.add('active'); loadDuGioWeeks(); } 
-            else if (tabName === 'admin') { document.getElementById('admin-panel').style.display = 'block'; document.getElementById('tab-admin').classList.add('active'); loadAdminData(); }
+            if (tabName === 'checkin') {
+                document.getElementById('checkin-panel').style.display = 'block';
+                document.getElementById('tab-checkin').classList.add('active');
+            } else if (tabName === 'schedule') {
+                document.getElementById('schedule-panel').style.display = 'block';
+                document.getElementById('tab-schedule').classList.add('active');
+                loadWeekOptions(); 
+            } else if (tabName === 'dugio') {
+                document.getElementById('dugio-panel').style.display = 'block';
+                document.getElementById('tab-dugio').classList.add('active');
+                loadDuGioWeeks(); 
+            } else if (tabName === 'admin') {
+                document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('tab-admin').classList.add('active');
+                loadAdminData(); 
+            }
         }
 
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
-            const hoTen = document.getElementById('hoTen').value; const week = document.getElementById('week-selector').value;
-            if (!hoTen) { alert("Bạn phải chọn Tên của mình trước!"); return; } if (!week) { alert("Dữ liệu tuần chưa sẵn sàng!"); return; }
-            const schedule = [document.getElementById('d2').checked ? "X" : "", document.getElementById('d3').checked ? "X" : "", document.getElementById('d4').checked ? "X" : "", document.getElementById('d5').checked ? "X" : "", document.getElementById('d6').checked ? "X" : "", document.getElementById('d7').checked ? "X" : "", document.getElementById('cn').checked ? "X" : ""];
+            const hoTen = document.getElementById('hoTen').value;
+            const week = document.getElementById('week-selector').value;
+            
+            if (!hoTen) { alert("Bạn phải chọn Tên của mình trước!"); return; }
+            if (!week) { alert("Dữ liệu tuần chưa sẵn sàng!"); return; }
+
+            const schedule = [
+                document.getElementById('d2').checked ? "X" : "", document.getElementById('d3').checked ? "X" : "",
+                document.getElementById('d4').checked ? "X" : "", document.getElementById('d5').checked ? "X" : "",
+                document.getElementById('d6').checked ? "X" : "", document.getElementById('d7').checked ? "X" : "",
+                document.getElementById('cn').checked ? "X" : ""
+            ];
+
             const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail }) }).then(r => r.json()).then(res => { btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; if(res.status === 'success') { alert(res.message); loadCurrentSchedule(); } else { alert("Lỗi: " + res.message); } }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; });
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST', 
+                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail })
+            }).then(r => r.json()).then(res => {
+                btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false;
+                if(res.status === 'success') { alert(res.message); loadCurrentSchedule(); } 
+                else { alert("Lỗi: " + res.message); }
+            }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; });
         });
 
         document.getElementById('save-dugio-btn').addEventListener('click', function() {
-            const hoTen = document.getElementById('hoTen').value; const weekLabel = document.getElementById('dugio-week-selector').value; const shcn = document.getElementById('input-shcn').value; const hdgd = document.getElementById('input-hdgd').value; const dugio = document.getElementById('input-dugio').value;
-            if (!hoTen) { alert("Bạn phải chọn Tên ở phía trên trước!"); return; } if (!weekLabel) { alert("Chưa chọn tuần!"); return; }
+            const hoTen = document.getElementById('hoTen').value;
+            const weekLabel = document.getElementById('dugio-week-selector').value;
+            const shcn = document.getElementById('input-shcn').value;
+            const hdgd = document.getElementById('input-hdgd').value;
+            const dugio = document.getElementById('input-dugio').value;
+            
+            if (!hoTen) { alert("Bạn phải chọn Tên ở phía trên trước!"); return; }
+            if (!weekLabel) { alert("Chưa chọn tuần!"); return; }
+
             const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "submit_du_gio", hoTen: hoTen, weekLabel: weekLabel, shcn: shcn, hdgd: hdgd, dugio: dugio }) }).then(r => r.json()).then(res => { btn.innerText = "🚀 Lưu thống kê"; btn.disabled = false; if(res.status === 'success') { alert(res.message); } else { alert("Lỗi: " + res.message); } }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "🚀 Lưu thống kê"; btn.disabled = false; });
+            
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST', 
+                body: JSON.stringify({ action: "submit_du_gio", hoTen: hoTen, weekLabel: weekLabel, shcn: shcn, hdgd: hdgd, dugio: dugio })
+            }).then(r => r.json()).then(res => {
+                btn.innerText = "🚀 Lưu thống kê"; btn.disabled = false;
+                if(res.status === 'success') { alert(res.message); } 
+                else { alert("Lỗi: " + res.message); }
+            }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "🚀 Lưu thống kê"; btn.disabled = false; });
         });
 
-        const video = document.getElementById('camera-stream'); const canvas = document.getElementById('preview-canvas'); const startCameraBtn = document.getElementById('start-camera-btn'); const activeCameraControls = document.getElementById('active-camera-controls'); const switchCameraBtn = document.getElementById('switch-camera-btn'); const captureBtn = document.getElementById('capture-btn'); const reviewControls = document.getElementById('review-controls'); const retakeBtn = document.getElementById('retake-btn'); const submitBtn = document.getElementById('submit-btn'); const hoTenSelect = document.getElementById('hoTen'); const progressContainer = document.getElementById('progress-container'); const progressBar = document.getElementById('progress-bar'); const loadingText = document.getElementById('loading-text');
+        const video = document.getElementById('camera-stream');
+        const canvas = document.getElementById('preview-canvas');
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const activeCameraControls = document.getElementById('active-camera-controls');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const reviewControls = document.getElementById('review-controls');
+        const retakeBtn = document.getElementById('retake-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const hoTenSelect = document.getElementById('hoTen');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
+
         let currentImageData = null; let currentStream = null; let useFrontCamera = false;
-        function initCamera() { if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); } const constraints = { video: { facingMode: (useFrontCamera ? "user" : "environment") }, audio: false }; navigator.mediaDevices.getUserMedia(constraints).then(stream => { currentStream = stream; video.style.display = 'block'; video.srcObject = stream; startCameraBtn.style.display = 'none'; activeCameraControls.style.display = 'block'; video.onloadedmetadata = () => { video.play(); }; }).catch(err => alert("Lỗi camera: " + err)); }
-        startCameraBtn.addEventListener('click', initCamera); switchCameraBtn.addEventListener('click', () => { useFrontCamera = !useFrontCamera; initCamera(); });
-        captureBtn.addEventListener('click', () => { const context = canvas.getContext('2d'); canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480; context.drawImage(video, 0, 0, canvas.width, canvas.height); if(useFrontCamera) { context.translate(canvas.width, 0); context.scale(-1, 1); context.drawImage(video, 0, 0, canvas.width, canvas.height); } currentImageData = canvas.toDataURL('image/jpeg', 0.8); video.style.display = 'none'; activeCameraControls.style.display = 'none'; canvas.style.display = 'block'; reviewControls.style.display = 'block'; });
-        retakeBtn.addEventListener('click', () => { currentImageData = null; canvas.style.display = 'none'; reviewControls.style.display = 'none'; video.style.display = 'block'; activeCameraControls.style.display = 'block'; });
-        function runProgressBar() { progressContainer.style.display = 'block'; loadingText.style.display = 'block'; loadingText.innerText = "Đang xử lý..."; progressBar.style.width = '10%'; let progress = 10; const interval = setInterval(() => { progress += Math.random() * 15; if (progress > 85) { progress = 85; clearInterval(interval); } progressBar.style.width = progress + '%'; }, 500); return interval; }
-        function resetButtons() { progressContainer.style.display = 'none'; loadingText.style.display = 'none'; submitBtn.disabled = false; retakeBtn.disabled = false; }
-        
-        submitBtn.addEventListener('click', () => {
-            const hoTen = hoTenSelect.value; if (!hoTen) { alert("Vui lòng chọn tên!"); return; } submitBtn.disabled = true; retakeBtn.disabled = true;
-            if (!isGlobalGpsRequired) { loadingText.innerText = "🚀 Bỏ qua GPS..."; sendDataToServer(hoTen, 0, 0); return; }
-            progressContainer.style.display = 'block'; loadingText.style.display = 'block'; loadingText.innerText = "📍 Đang kiểm tra vị trí..."; progressBar.style.width = '5%';
-            if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((position) => { sendDataToServer(hoTen, position.coords.latitude, position.coords.longitude); }, (error) => { alert("Lỗi GPS!"); resetButtons(); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }); } else { alert("Không hỗ trợ GPS."); resetButtons(); }
+
+        function initCamera() {
+            if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+            const constraints = { video: { facingMode: (useFrontCamera ? "user" : "environment") }, audio: false };
+            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                currentStream = stream; video.style.display = 'block'; video.srcObject = stream;
+                startCameraBtn.style.display = 'none'; activeCameraControls.style.display = 'block';
+                video.onloadedmetadata = () => { video.play(); };
+            }).catch(err => alert("Lỗi camera: " + err));
+        }
+
+        startCameraBtn.addEventListener('click', initCamera);
+        switchCameraBtn.addEventListener('click', () => { useFrontCamera = !useFrontCamera; initCamera(); });
+
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            if(useFrontCamera) { context.translate(canvas.width, 0); context.scale(-1, 1); context.drawImage(video, 0, 0, canvas.width, canvas.height); }
+            currentImageData = canvas.toDataURL('image/jpeg', 0.8);
+            video.style.display = 'none'; activeCameraControls.style.display = 'none';
+            canvas.style.display = 'block'; reviewControls.style.display = 'block';
         });
 
-        function sendDataToServer(hoTen, lat, lng) { const progressInterval = runProgressBar(); fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData, lat: lat, lng: lng, email: currentGoogleEmail }) }).then(r => r.json()).then(res => { clearInterval(progressInterval); progressBar.style.width = '100%'; loadingText.innerText = res.status === 'success' ? "Hoàn tất!" : "Lỗi!"; setTimeout(() => { resetButtons(); progressBar.style.width = '0%'; if(res.status === 'success') { alert(res.message); retakeBtn.click(); } else { alert(res.message); } }, 500); }).catch(() => { alert('Lỗi mạng!'); clearInterval(progressInterval); resetButtons(); }); }
+        retakeBtn.addEventListener('click', () => {
+            currentImageData = null; canvas.style.display = 'none'; reviewControls.style.display = 'none'; 
+            video.style.display = 'block'; activeCameraControls.style.display = 'block';
+        });
 
-        function updateGpsButtonUI(isRequired) { const btn = document.getElementById('toggle-gps-btn'); if (isRequired) { btn.style.backgroundColor = '#4CAF50'; btn.innerText = '📍 GPS: ĐANG BẬT'; } else { btn.style.backgroundColor = '#f44336'; btn.innerText = '🚫 GPS: ĐANG TẮT'; } }
-        document.getElementById('toggle-gps-btn').addEventListener('click', function() { if(!confirm("Đổi trạng thái GPS?")) return; this.innerText = "⏳ Đang đổi..."; fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "toggle_gps" }) }).then(r => r.json()).then(res => { if(res.status === 'success') { isGlobalGpsRequired = res.gpsRequired; updateGpsButtonUI(isGlobalGpsRequired); document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block'; alert(res.message); } }); });
-        document.getElementById('send-email-btn').addEventListener('click', function() { if(!confirm("Gửi mail nhắc nhở?")) return; this.innerText = "⏳ Đang gửi..."; this.disabled = true; fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "send_reminders_manual" }) }).then(r => r.json()).then(res => { this.innerText = "📧 Gửi Mail Nhắc"; this.disabled = false; alert(res.message); }); });
-        
+        function runProgressBar() {
+            progressContainer.style.display = 'block'; loadingText.style.display = 'block';
+            loadingText.innerText = "Đang xử lý..."; progressBar.style.width = '10%';
+            let progress = 10;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 85) { progress = 85; clearInterval(interval); }
+                progressBar.style.width = progress + '%';
+            }, 500);
+            return interval;
+        }
+
+        function resetButtons() {
+            progressContainer.style.display = 'none'; loadingText.style.display = 'none';
+            submitBtn.disabled = false; retakeBtn.disabled = false;
+        }
+
+        submitBtn.addEventListener('click', () => {
+            const hoTen = hoTenSelect.value;
+            if (!hoTen) { alert("Vui lòng chọn tên!"); return; }
+            
+            submitBtn.disabled = true; retakeBtn.disabled = true;
+            
+            if (!isGlobalGpsRequired) {
+                loadingText.innerText = "🚀 Bỏ qua GPS, đang gửi dữ liệu...";
+                sendDataToServer(hoTen, 0, 0); 
+                return;
+            }
+
+            progressContainer.style.display = 'block'; loadingText.style.display = 'block';
+            loadingText.innerText = "📍 Đang kiểm tra vị trí..."; progressBar.style.width = '5%';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => { sendDataToServer(hoTen, position.coords.latitude, position.coords.longitude); },
+                    (error) => { alert("Lỗi Định vị: Hệ thống đang yêu cầu bắt buộc phải có GPS!"); resetButtons(); }, 
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            } else { alert("Không hỗ trợ GPS."); resetButtons(); }
+        });
+
+        function sendDataToServer(hoTen, lat, lng) {
+            const progressInterval = runProgressBar();
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST', body: JSON.stringify({ action: "check_in", hoTen: hoTen, image: currentImageData, lat: lat, lng: lng, email: currentGoogleEmail })
+            }).then(r => r.json()).then(res => {
+                clearInterval(progressInterval); progressBar.style.width = '100%'; 
+                loadingText.innerText = res.status === 'success' ? "Hoàn tất!" : "Lỗi!";
+                setTimeout(() => {
+                    resetButtons(); progressBar.style.width = '0%';
+                    if(res.status === 'success') { alert(res.message); retakeBtn.click(); } 
+                    else { alert(res.message); }
+                }, 500); 
+            }).catch(() => { alert('Lỗi mạng!'); clearInterval(progressInterval); resetButtons(); });
+        }
+
+        function updateGpsButtonUI(isRequired) {
+            const btn = document.getElementById('toggle-gps-btn');
+            if (isRequired) {
+                btn.style.backgroundColor = '#4CAF50';
+                btn.innerText = '📍 GPS: ĐANG BẬT';
+            } else {
+                btn.style.backgroundColor = '#f44336';
+                btn.innerText = '🚫 GPS: ĐANG TẮT';
+            }
+        }
+
+        document.getElementById('toggle-gps-btn').addEventListener('click', function() {
+            if(!confirm("Bạn có muốn thay đổi trạng thái bắt buộc kiểm tra định vị?")) return;
+            this.innerText = "⏳ Đang đổi...";
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "toggle_gps" }) })
+            .then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    isGlobalGpsRequired = res.gpsRequired;
+                    updateGpsButtonUI(isGlobalGpsRequired);
+                    document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block';
+                    alert(res.message);
+                }
+            });
+        });
+
+        document.getElementById('send-email-btn').addEventListener('click', function() {
+            if(!confirm("Hệ thống sẽ gửi email tới tất cả những bạn có lịch nhưng chưa điểm danh. Tiếp tục?")) return;
+            this.innerText = "⏳ Đang gửi..."; this.disabled = true;
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "send_reminders_manual" }) })
+            .then(r => r.json()).then(res => {
+                this.innerText = "📧 Gửi Mail Nhắc"; this.disabled = false;
+                alert(res.message);
+            });
+        });
+
+        // ===============================================
         // ADMIN GỬI THAO TÁC THỦ CÔNG
+        // ===============================================
         document.getElementById('admin-submit-status-btn').addEventListener('click', function() {
             const targetName = document.getElementById('admin-target-name').value;
             const status = document.getElementById('admin-status').value;
@@ -327,6 +629,7 @@
             if (!reason && status === "absent") { alert("Vui lòng ghi lý do vắng (Bệnh, Gia đình...)!"); return; }
 
             const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
+            
             fetch(APPS_SCRIPT_URL, { 
                 method: 'POST', 
                 body: JSON.stringify({ action: "admin_update_status", targetName: targetName, targetDate: targetDate, status: status, reason: reason, email: currentGoogleEmail }) 
@@ -341,34 +644,67 @@
         });
 
         function loadAdminData() {
-            const btn = document.getElementById('refresh-admin-btn'); const dateVal = document.getElementById('admin-date-picker').value; 
+            const btn = document.getElementById('refresh-admin-btn');
+            const dateVal = document.getElementById('admin-date-picker').value; 
             btn.innerText = "⏳ Đang tải..."; btn.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_admin_data", date: dateVal }) }).then(r => r.json()).then(res => {
+
+            fetch(APPS_SCRIPT_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: "get_admin_data", date: dateVal }) 
+            })
+            .then(r => r.json()).then(res => {
                 btn.innerText = "🔍 Tra cứu"; btn.disabled = false;
                 if(res.status === 'success') {
-                    document.getElementById('admin-target-date').innerText = res.targetDate; document.getElementById('admin-progress').innerText = res.totalCheckedIn + "/" + res.totalExpected; document.getElementById('admin-missing-count').innerText = res.missing.length;
-                    isGlobalGpsRequired = res.gpsRequired; updateGpsButtonUI(isGlobalGpsRequired); document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block';
-                    const ul = document.getElementById('admin-missing-list'); ul.innerHTML = ""; 
+                    document.getElementById('admin-target-date').innerText = res.targetDate;
+                    document.getElementById('admin-progress').innerText = res.totalCheckedIn + "/" + res.totalExpected;
+                    document.getElementById('admin-missing-count').innerText = res.missing.length;
+                    
+                    isGlobalGpsRequired = res.gpsRequired;
+                    updateGpsButtonUI(isGlobalGpsRequired);
+                    document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block';
+
+                    const ul = document.getElementById('admin-missing-list');
+                    ul.innerHTML = ""; 
                     if (res.missing.length === 0) ul.innerHTML = "<li style='color:green;'>Đủ quân số hoặc không có lịch!</li>";
                     else res.missing.forEach(item => { 
-                        // Nếu item là chuỗi chứa "(❌ Vắng:" thì tô màu đỏ cho dễ nhìn
-                        if(item.includes("(❌ Vắng:")) ul.innerHTML += `<li style='color:#d32f2f; font-weight:bold;'>${item}</li>`;
+                        // Nếu item là chuỗi chứa "❌ Vắng" thì tô màu đỏ cho dễ nhìn
+                        if(item.includes("❌ Vắng")) ul.innerHTML += `<li style='color:#d32f2f; font-weight:bold;'>${item}</li>`;
                         else ul.innerHTML += `<li>${item}</li>`; 
                     });
-                    const tbody = document.getElementById('admin-checkedin-table'); tbody.innerHTML = "";
+
+                    const tbody = document.getElementById('admin-checkedin-table');
+                    tbody.innerHTML = "";
                     res.checkedInDetails.forEach(item => {
                         let tr = document.createElement('tr');
-                        // Nếu là Admin điểm danh thì tô màu khác
-                        let infoStyle = item.distance.includes("✅ Bổ sung") ? "color: #0277bd; font-weight: bold;" : "";
-                        tr.innerHTML = `<td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td><td style="padding: 8px; border: 1px solid #ddd;">${item.time}</td><td style="padding: 8px; border: 1px solid #ddd; ${infoStyle}">${item.distance}</td>`;
+                        // Nếu là Admin điểm danh bổ sung thì tô màu xanh
+                        let infoStyle = item.distance.includes("✅ Bổ sung") ? "color: #0277bd; font-weight: bold;" : (item.distance !== "GPS: Tắt (Đặc cách)" && parseInt(item.distance) > 200) ? "color: red; font-weight: bold;" : "";
+                        tr.innerHTML = `
+                            <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${item.time}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; ${infoStyle}">${item.distance}</td>
+                        `;
                         tbody.appendChild(tr);
                     });
                 }
             });
         }
+        
         document.getElementById('refresh-admin-btn').addEventListener('click', loadAdminData);
-        document.getElementById('tab-admin').addEventListener('click', function() { const today = new Date(); const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]; document.getElementById('admin-date-picker').value = localDate; });
+
+        document.getElementById('tab-admin').addEventListener('click', function() {
+            const today = new Date();
+            const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            document.getElementById('admin-date-picker').value = localDate;
+        });
     </script>
-    <script> if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => console.log('PWA đã sẵn sàng!')).catch(err => console.log('Lỗi PWA:', err)); }); } </script>   
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('PWA đã sẵn sàng!'))
+                .catch(err => console.log('Lỗi PWA:', err));
+            });
+        }
+    </script>   
 </body>
 </html>
