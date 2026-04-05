@@ -272,6 +272,7 @@
             }).then(r => r.json()).then(res => {
                 btnSave.innerText = "💾 Lưu bổ sung lịch"; btnSave.disabled = false;
                 if(res.status === 'success') {
+                    document.getElementById('week-label').innerText = "📅 Tuần bắt đầu từ: " + res.weekLabel;
                     const sched = res.schedule; 
                     days.forEach((id, index) => {
                         const cb = document.getElementById(id);
