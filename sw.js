@@ -1,4 +1,4 @@
-const CACHE_NAME = 'diemdanh-app-v2'; 
+const CACHE_NAME = 'diemdanh-app-v3'; 
 
 const urlsToCache = [
   './',
