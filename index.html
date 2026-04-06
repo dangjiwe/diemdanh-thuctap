@@ -162,10 +162,21 @@
             else { document.getElementById('login-panel').style.display = 'flex'; document.getElementById('main-app').style.display = 'none'; }
         };
 
+        // ===============================================
+        // HÀM HIỂN THỊ APP & ĐÒI NỢ NGAY KHI VỪA MỞ
+        // ===============================================
         function showMainApp(email) {
             document.getElementById('login-panel').style.display = 'none'; document.getElementById('user-info').style.display = 'block';
             document.getElementById('user-email').innerText = email; document.getElementById('main-app').style.display = 'block';
-            const savedName = localStorage.getItem('student_name'); if (savedName) document.getElementById('hoTen').value = savedName;
+            
+            const savedName = localStorage.getItem('student_name'); 
+            if (savedName) {
+                document.getElementById('hoTen').value = savedName;
+                
+                // VŨ KHÍ MỚI: Vừa vô thấy tên lưu sẵn là check nợ liền, không cần đợi đổi tên!
+                checkAndAlertMissingStats(savedName); 
+            }
+            
             if (email === ADMIN_EMAIL) document.getElementById('tab-admin').style.display = 'block';
             fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_settings" }) }).then(r => r.json()).then(res => { if(res.status === 'success') { isGlobalGpsRequired = res.gpsRequired; document.getElementById('gps-status-banner').style.display = isGlobalGpsRequired ? 'none' : 'block'; } });
         }
@@ -314,29 +325,37 @@
             });
         }
 
-        // =======================================================
-        // ĐOẠN ĐÒI NỢ THỐNG KÊ ĐÃ ĐƯỢC CHÈN VÀO ĐÂY NÈ LÊN ĐĂNG 🚀
-        // =======================================================
+        // ===============================================
+        // HÀM ĐI SĂN NỢ THỐNG KÊ (Đóng gói riêng để gọi mọi lúc)
+        // ===============================================
+        function checkAndAlertMissingStats(selectedName) {
+            if (!selectedName) return;
+            fetch(APPS_SCRIPT_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: "check_missing_stats", hoTen: selectedName }) 
+            })
+            .then(r => r.json())
+            .then(res => {
+                // Tui đã bỏ mấy dòng báo lỗi DEBUG đi cho đỡ phiền, nếu nợ mới báo thôi
+                if (res.status === 'success' && res.missing.length > 0) {
+                    let msg = "⚠️ GÓC NHẮC NHỞ TỪ TRƯỞNG ĐOÀN ⚠️\n\nBạn chưa điền Thống kê số tiết cho:\n";
+                    res.missing.forEach(w => {
+                        if (!w.includes("[DEBUG]")) msg += "👉 " + w + "\n";
+                    });
+                    if(msg.includes("👉")) {
+                        msg += "\nVui lòng sang tab 'Thống kê' để cập nhật ngay nhé!";
+                        alert(msg); 
+                    }
+                }
+            });
+        }
+
+        // KHI ĐỔI TÊN CŨNG CHECK NỢ LUÔN
         document.getElementById('hoTen').addEventListener('change', function() {
             const selectedName = this.value;
             if (selectedName) {
                 localStorage.setItem('student_name', selectedName);
-                
-                // GỌI MÁY CHỦ ĐỂ KIỂM TRA NỢ THỐNG KÊ
-                fetch(APPS_SCRIPT_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: "check_missing_stats", hoTen: selectedName }) 
-                })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.status === 'success' && res.missing.length > 0) {
-                        let msg = "⚠️ GÓC NHẮC NHỞ TỪ TRƯỞNG ĐOÀN ⚠️\n\nBạn chưa điền Thống kê số tiết cho:\n";
-                        res.missing.forEach(w => msg += "👉 " + w + "\n");
-                        msg += "\nVui lòng sang tab 'Thống kê' để cập nhật ngay nhé!";
-                        alert(msg); // Pop-up đòi nợ
-                    }
-                });
-
+                checkAndAlertMissingStats(selectedName); // Gọi hàm săn nợ
             } else {
                 localStorage.removeItem('student_name');
             }
