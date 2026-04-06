@@ -144,7 +144,7 @@
             <div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="date" id="admin-date-picker" style="flex: 2; margin-top: 0; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"><button id="refresh-admin-btn" class="btn-primary" style="flex: 1; margin-top: 0; padding: 10px;">🔍 Tra cứu</button></div>
             <p style="font-size: 14px;">Thống kê ngày: <b id="admin-target-date" style="color:#008CBA;">Hôm nay</b> | Tiến độ: <b id="admin-progress" style="color:#4CAF50;">0/0</b></p>
             <div style="background: #fff3f3; padding: 10px; border-radius: 5px; margin-bottom: 15px;"><p style="margin:0 0 5px 0; color: #f44336; font-weight: bold;">⚠️ CHƯA ĐIỂM DANH HOẶC VẮNG (<span id="admin-missing-count">0</span>):</p><ul id="admin-missing-list" style="margin:0; padding-left: 20px; font-size: 14px;"></ul></div>
-            <p style="margin:0 0 5px 0; color: #4CAF50; font-weight: bold;">✅ ĐÃ ĐIỂM DANH:</p><table style="width: 100%; border-collapse: collapse; font-size: 14px;"><thead><tr style="background-color: #f1f1f1; text-align: left;"><th style="padding: 8px; border: 1px solid #ddd;">Tên</th><th style="padding: 8px; border: 1px solid #ddd;">Giờ</th><th style="padding: 8px; border: 1px solid #ddd;">Thông tin</th></tr></thead><tbody id="admin-checkedin-table"></tbody></table>
+            <p style="margin:0 0 5px 0; color: #4CAF50; font-weight: bold;">✅ ĐÃ ĐIỂM DANH:</p><table style="width: 100%; border-collapse: collapse; font-size: 14px;"><thead><tr style="background-color: #f1f1f1; text-align: left;"><th style="padding: 8px; border: 1px solid #ddd;">Tên</th><th style="padding: 8px; border: 1px solid #ddd;">Giờ</th><th style="padding: 8px; border: 1px solid #ddd;">Thông去 tin</th></tr></thead><tbody id="admin-checkedin-table"></tbody></table>
         </div>
     </div>
 
@@ -174,30 +174,21 @@
         function handleCredentialResponse(response) { currentGoogleEmail = decodeJwtResponse(response.credential).email; localStorage.setItem('student_email', currentGoogleEmail); showMainApp(currentGoogleEmail); }
         function logoutGoogle() { if(confirm("Đăng xuất?")) { localStorage.removeItem('student_email'); localStorage.removeItem('student_name'); window.location.reload(); } }
 
-        // ===============================================
-        // TẢI MENU TUẦN (ĐÃ GỘP CHUYẾN XE - SIÊU NHANH)
-        // ===============================================
         function loadWeekOptions() {
             const selector = document.getElementById('week-selector');
             const hoTen = document.getElementById('hoTen').value; 
-            
-            // Đã tải rồi thì thôi, không tải lại
-            if(selector.options.length > 0 && selector.value !== "") { 
-                loadCurrentSchedule(); return; 
-            }
+            if(selector.options.length > 0 && selector.value !== "") { loadCurrentSchedule(); return; }
             if(!hoTen) return;
 
             const btnSave = document.getElementById('save-schedule-btn');
             btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
             selector.innerHTML = "<option value=''>⌛ Đang tải dữ liệu...</option>";
             
-            // Tự tính tuần hiện tại
             const now = new Date(); const day = now.getDay();
             const diff = now.getDate() - day + (day === 0 ? -6 : 1);
             const monday = new Date(now.setDate(diff));
             const currentMonStr = monday.getDate().toString().padStart(2, '0') + "/" + (monday.getMonth() + 1).toString().padStart(2, '0') + "/" + monday.getFullYear();
 
-            // GỌI COMBO 2 TRONG 1 TỪ MÁY CHỦ
             fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_schedule_init", hoTen: hoTen, week: currentMonStr }) })
             .then(r => r.json()).then(res => {
                 if(res.status === 'success') {
@@ -209,18 +200,13 @@
                         selector.appendChild(opt); 
                     });
 
-                    // Chốt tuần hiện tại
                     if (res.weeks.includes(currentMonStr)) {
                         selector.value = currentMonStr;
                     } else {
                         selector.selectedIndex = selector.options.length - 1;
-                        if (selector.value !== currentMonStr) {
-                            loadCurrentSchedule(); // Phải tải lại nếu tuần không khớp
-                            return;
-                        }
+                        if (selector.value !== currentMonStr) { loadCurrentSchedule(); return; }
                     }
 
-                    // TỰ ĐỘNG ĐIỀN LỊCH VỪA LẤY ĐƯỢC LÊN GIAO DIỆN LUÔN
                     const sched = res.schedule; 
                     dayIds.forEach((id, index) => {
                         const cb = document.getElementById(id + '_check'); const inp = document.getElementById(id + '_tiet');
@@ -234,15 +220,9 @@
                     });
                     btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
                 }
-            }).catch(e => { 
-                selector.innerHTML = "<option value=''>Lỗi mạng</option>"; 
-                btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; 
-            });
+            }).catch(e => { selector.innerHTML = "<option value=''>Lỗi mạng</option>"; btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; });
         }
 
-        // ===============================================
-        // TẢI MENU DỰ GIỜ - FIX LỖI NHẬN NHẦM "26/4" THÀNH "6/4"
-        // ===============================================
         function loadDuGioWeeks() {
             const selDuGio = document.getElementById('dugio-week-selector');
             selDuGio.innerHTML = "<option value=''>⌛ Đang tải...</option>";
@@ -251,94 +231,62 @@
             .then(r => r.json()).then(res => {
                 if(res.status === 'success') {
                     let opts = "<option value=''>-- Chọn tuần --</option>"; 
-                    
                     const now = new Date();
                     const day = now.getDay();
                     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
                     const monday = new Date(now.setDate(diff));
-                    
-                    const d1 = monday.getDate() + "/" + (monday.getMonth() + 1); // VD: "6/4"
-                    const d2 = monday.getDate().toString().padStart(2, '0') + "/" + (monday.getMonth() + 1).toString().padStart(2, '0'); // VD: "06/04"
+                    const d1 = monday.getDate() + "/" + (monday.getMonth() + 1);
+                    const d2 = monday.getDate().toString().padStart(2, '0') + "/" + (monday.getMonth() + 1).toString().padStart(2, '0');
                     
                     let foundIndex = 0;
-
                     res.weeks.forEach((w, index) => { 
                         opts += `<option value="${w}">${w}</option>`; 
-                        
-                        // BỘ LỌC CHẶT CHẼ: Bắt buộc phải có dấu ngoặc đơn "(" hoặc khoảng trắng " " đứng trước
-                        // Để chặn đứng việc máy tính nhận vơ "16/4" hay "26/4" thành "6/4"
-                        if (w.includes("(" + d1) || w.includes(" " + d1) || w.includes("(" + d2) || w.includes(" " + d2)) {
-                            foundIndex = index + 1; 
-                        }
+                        if (w.includes("(" + d1) || w.includes(" " + d1) || w.includes("(" + d2) || w.includes(" " + d2)) { foundIndex = index + 1; }
                     });
                     
                     selDuGio.innerHTML = opts; 
                     selDuGio.selectedIndex = foundIndex; 
-                    
                     if(foundIndex !== 0) fetchDuGioValue();
                 }
             });
         }
 
-        // ĐỊNH NGHĨA EVENT CHO CHECKBOX HIỆN Ô TIẾT
         dayIds.forEach(id => {
             document.getElementById(id + '_check').addEventListener('change', function() {
                 document.getElementById(id + '_tiet').style.display = this.checked ? 'block' : 'none';
             });
         });
 
-        // ===============================================
-        // LOGIC TẢI LỊCH (Đã fix lỗi Race Condition)
-        // ===============================================
         function loadCurrentSchedule() {
             const hoTen = document.getElementById('hoTen').value; 
             const week = document.getElementById('week-selector').value;
             if (!hoTen || document.getElementById('schedule-panel').style.display === 'none' || !week) return; 
             
             const btnSave = document.getElementById('save-schedule-btn');
-            
             dayIds.forEach(id => {
                 const cb = document.getElementById(id + '_check'); const inp = document.getElementById(id + '_tiet');
                 cb.checked = false; cb.disabled = false; cb.parentElement.style.opacity = "1"; 
                 inp.value = ""; inp.style.display = "none"; inp.disabled = false;
             });
-
             btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
-            
-            // LƯU LẠI CÁI TUẦN ĐANG ĐƯỢC YÊU CẦU
             const fetchingWeek = week;
-
             fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week }) })
             .then(r => r.json()).then(res => {
-                
-                // KIỂM TRA CHÉO: Nếu dữ liệu về mà tuần trên màn hình đã bị đổi thì VỨT BỎ kết quả này
                 if (document.getElementById('week-selector').value !== fetchingWeek) return;
-
                 btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
                 if(res.status === 'success') {
                     const sched = res.schedule; 
                     dayIds.forEach((id, index) => {
                         const cb = document.getElementById(id + '_check'); const inp = document.getElementById(id + '_tiet');
                         if (sched[index] && sched[index] !== "") { 
-                            cb.checked = true; 
-                            cb.disabled = true; // KHÓA CHECKBOX NGÀY (KHÔNG CHO HỦY)
-                            cb.parentElement.style.opacity = "0.7"; 
-                            inp.style.display = "block"; 
-                            inp.value = sched[index]; 
-                            inp.disabled = false; // Ô TIẾT VẪN CHO SỬA BÌNH THƯỜNG
+                            cb.checked = true; cb.disabled = true; cb.parentElement.style.opacity = "0.7"; 
+                            inp.style.display = "block"; inp.value = sched[index]; inp.disabled = false; 
                         }
                     });
                 }
-            }).catch(() => { 
-                if (document.getElementById('week-selector').value === fetchingWeek) {
-                    btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; 
-                }
-            });
+            }).catch(() => { if (document.getElementById('week-selector').value === fetchingWeek) { btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; } });
         }
 
-        // ===============================================
-        // LOGIC TẢI THỐNG KÊ DỰ GIỜ (Đã fix lỗi Race Condition)
-        // ===============================================
         function fetchDuGioValue() {
             const hoTen = document.getElementById('hoTen').value; 
             const weekLabel = document.getElementById('dugio-week-selector').value;
@@ -349,33 +297,53 @@
             if (!hoTen || !weekLabel || document.getElementById('dugio-panel').style.display === 'none') { 
                 iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; return; 
             }
-            
             iShcn.value = "⏳..."; iHdgd.value = "⏳..."; iDugio.value = "⏳..."; 
             iShcn.disabled = true; iHdgd.disabled = true; iDugio.disabled = true;
-
-            // LƯU LẠI CÁI TUẦN ĐANG ĐƯỢC YÊU CẦU
             const fetchingWeek = weekLabel;
 
             fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data", hoTen: hoTen, weekLabel: weekLabel }) })
             .then(r => r.json()).then(res => {
-                
-                // KIỂM TRA CHÉO
                 if (document.getElementById('dugio-week-selector').value !== fetchingWeek) return;
-
                 iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false;
-                if(res.status === 'success') { 
-                    iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio; 
-                }
+                if(res.status === 'success') { iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio; }
                 else { iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; }
             }).catch(() => { 
                 if (document.getElementById('dugio-week-selector').value === fetchingWeek) {
-                    iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false; 
-                    iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; 
+                    iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false; iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; 
                 }
             });
         }
 
-        document.getElementById('hoTen').addEventListener('change', function() { localStorage.setItem('student_name', this.value); loadCurrentSchedule(); fetchDuGioValue(); });
+        // =======================================================
+        // ĐOẠN ĐÒI NỢ THỐNG KÊ ĐÃ ĐƯỢC CHÈN VÀO ĐÂY NÈ LÊN ĐĂNG 🚀
+        // =======================================================
+        document.getElementById('hoTen').addEventListener('change', function() {
+            const selectedName = this.value;
+            if (selectedName) {
+                localStorage.setItem('student_name', selectedName);
+                
+                // GỌI MÁY CHỦ ĐỂ KIỂM TRA NỢ THỐNG KÊ
+                fetch(APPS_SCRIPT_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: "check_missing_stats", hoTen: selectedName }) 
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success' && res.missing.length > 0) {
+                        let msg = "⚠️ GÓC NHẮC NHỞ TỪ TRƯỞNG ĐOÀN ⚠️\n\nBạn chưa điền Thống kê số tiết cho:\n";
+                        res.missing.forEach(w => msg += "👉 " + w + "\n");
+                        msg += "\nVui lòng sang tab 'Thống kê' để cập nhật ngay nhé!";
+                        alert(msg); // Pop-up đòi nợ
+                    }
+                });
+
+            } else {
+                localStorage.removeItem('student_name');
+            }
+            loadCurrentSchedule(); 
+            fetchDuGioValue(); 
+        });
+
         document.getElementById('week-selector').addEventListener('change', loadCurrentSchedule);
         document.getElementById('dugio-week-selector').addEventListener('change', fetchDuGioValue);
 
@@ -388,55 +356,29 @@
             else if (tabName === 'admin') { document.getElementById('admin-panel').style.display = 'block'; document.getElementById('tab-admin').classList.add('active'); loadAdminData(); }
         }
 
-        // ===============================================
-        // LƯU LỊCH (Đã fix lỗi ngẽn mạng, siêu mượt)
-        // ===============================================
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
-            const hoTen = document.getElementById('hoTen').value; 
-            const week = document.getElementById('week-selector').value;
-            
+            const hoTen = document.getElementById('hoTen').value; const week = document.getElementById('week-selector').value;
             if (!hoTen || !week) { alert("Chọn Tên và Tuần!"); return; }
-            
-            // Lấy dữ liệu sinh viên vừa nhập
             const schedule = dayIds.map(id => {
                 const isChecked = document.getElementById(id + '_check').checked;
                 const tietVal = document.getElementById(id + '_tiet').value.trim();
                 return isChecked ? (tietVal !== "" ? tietVal : "X") : "";
             });
-            
             const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
-            
-            fetch(APPS_SCRIPT_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail }) 
-            })
-            .then(r => r.json())
-            .then(res => { 
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail }) })
+            .then(r => r.json()).then(res => { 
                 btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; 
-                
                 if(res.status === 'success') { 
                     alert(res.message); 
-                    
-                    // VŨ KHÍ BÍ MẬT Ở ĐÂY: KHÔNG GỌI loadCurrentSchedule() NỮA!
-                    // Tự động khóa giao diện trực tiếp trên máy để trải nghiệm mượt mà không độ trễ
                     dayIds.forEach((id, index) => {
                         if (schedule[index] !== "") {
-                            const cb = document.getElementById(id + '_check');
-                            const inp = document.getElementById(id + '_tiet');
-                            cb.checked = true;
-                            cb.disabled = true; // Khóa không cho hủy ngày
-                            cb.parentElement.style.opacity = "0.7"; // Làm mờ
-                            inp.style.display = "block";
-                            inp.value = schedule[index];
+                            const cb = document.getElementById(id + '_check'); const inp = document.getElementById(id + '_tiet');
+                            cb.checked = true; cb.disabled = true; cb.parentElement.style.opacity = "0.7"; 
+                            inp.style.display = "block"; inp.value = schedule[index];
                         }
                     });
-                } else { 
-                    alert("Lỗi: " + res.message); 
-                } 
-            })
-            .catch(() => { 
-                alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; 
-            });
+                } else { alert("Lỗi: " + res.message); } 
+            }).catch(() => { alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; });
         });
 
         document.getElementById('save-dugio-btn').addEventListener('click', function() {
