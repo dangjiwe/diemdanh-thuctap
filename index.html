@@ -364,16 +364,55 @@
             else if (tabName === 'admin') { document.getElementById('admin-panel').style.display = 'block'; document.getElementById('tab-admin').classList.add('active'); loadAdminData(); }
         }
 
+        // ===============================================
+        // LƯU LỊCH (Đã fix lỗi ngẽn mạng, siêu mượt)
+        // ===============================================
         document.getElementById('save-schedule-btn').addEventListener('click', function() {
-            const hoTen = document.getElementById('hoTen').value; const week = document.getElementById('week-selector').value;
+            const hoTen = document.getElementById('hoTen').value; 
+            const week = document.getElementById('week-selector').value;
+            
             if (!hoTen || !week) { alert("Chọn Tên và Tuần!"); return; }
+            
+            // Lấy dữ liệu sinh viên vừa nhập
             const schedule = dayIds.map(id => {
                 const isChecked = document.getElementById(id + '_check').checked;
                 const tietVal = document.getElementById(id + '_tiet').value.trim();
                 return isChecked ? (tietVal !== "" ? tietVal : "X") : "";
             });
-            const btn = this; btn.innerText = "⏳..."; btn.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail }) }).then(r => r.json()).then(res => { btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; alert(res.message); loadCurrentSchedule(); });
+            
+            const btn = this; btn.innerText = "⏳ Đang lưu..."; btn.disabled = true;
+            
+            fetch(APPS_SCRIPT_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: "register_schedule", hoTen: hoTen, week: week, schedule: schedule, email: currentGoogleEmail }) 
+            })
+            .then(r => r.json())
+            .then(res => { 
+                btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; 
+                
+                if(res.status === 'success') { 
+                    alert(res.message); 
+                    
+                    // VŨ KHÍ BÍ MẬT Ở ĐÂY: KHÔNG GỌI loadCurrentSchedule() NỮA!
+                    // Tự động khóa giao diện trực tiếp trên máy để trải nghiệm mượt mà không độ trễ
+                    dayIds.forEach((id, index) => {
+                        if (schedule[index] !== "") {
+                            const cb = document.getElementById(id + '_check');
+                            const inp = document.getElementById(id + '_tiet');
+                            cb.checked = true;
+                            cb.disabled = true; // Khóa không cho hủy ngày
+                            cb.parentElement.style.opacity = "0.7"; // Làm mờ
+                            inp.style.display = "block";
+                            inp.value = schedule[index];
+                        }
+                    });
+                } else { 
+                    alert("Lỗi: " + res.message); 
+                } 
+            })
+            .catch(() => { 
+                alert("Lỗi mạng!"); btn.innerText = "💾 Lưu lịch tuần này"; btn.disabled = false; 
+            });
         });
 
         document.getElementById('save-dugio-btn').addEventListener('click', function() {
