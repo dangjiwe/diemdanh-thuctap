@@ -175,44 +175,68 @@
         function logoutGoogle() { if(confirm("Đăng xuất?")) { localStorage.removeItem('student_email'); localStorage.removeItem('student_name'); window.location.reload(); } }
 
         // ===============================================
-        // TẢI MENU TUẦN - TỰ ĐỘNG CHỌN TUẦN HIỆN TẠI
+        // TẢI MENU TUẦN (ĐÃ GỘP CHUYẾN XE - SIÊU NHANH)
         // ===============================================
         function loadWeekOptions() {
             const selector = document.getElementById('week-selector');
-            selector.innerHTML = "<option value=''>⌛ Đang tải...</option>";
+            const hoTen = document.getElementById('hoTen').value; 
             
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) })
+            // Đã tải rồi thì thôi, không tải lại
+            if(selector.options.length > 0 && selector.value !== "") { 
+                loadCurrentSchedule(); return; 
+            }
+            if(!hoTen) return;
+
+            const btnSave = document.getElementById('save-schedule-btn');
+            btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
+            selector.innerHTML = "<option value=''>⌛ Đang tải dữ liệu...</option>";
+            
+            // Tự tính tuần hiện tại
+            const now = new Date(); const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(now.setDate(diff));
+            const currentMonStr = monday.getDate().toString().padStart(2, '0') + "/" + (monday.getMonth() + 1).toString().padStart(2, '0') + "/" + monday.getFullYear();
+
+            // GỌI COMBO 2 TRONG 1 TỪ MÁY CHỦ
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_schedule_init", hoTen: hoTen, week: currentMonStr }) })
             .then(r => r.json()).then(res => {
                 if(res.status === 'success') {
                     selector.innerHTML = "";
                     if (res.weeks.length === 0) { selector.innerHTML = "<option value=''>Chưa có dữ liệu</option>"; return; }
                     
-                    // 1. Tạo danh sách option
-                    res.weeks.forEach(w => {
-                        let opt = document.createElement('option');
-                        opt.value = w; opt.innerText = "Tuần từ: " + w;
-                        selector.appendChild(opt);
+                    res.weeks.forEach(w => { 
+                        let opt = document.createElement('option'); opt.value = w; opt.innerText = "Tuần từ: " + w; 
+                        selector.appendChild(opt); 
                     });
 
-                    // 2. TỰ ĐỘNG TÌM TUẦN HIỆN TẠI (Thứ 2 tuần này)
-                    const now = new Date();
-                    const day = now.getDay();
-                    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-                    const monday = new Date(now.setDate(diff));
-                    const currentMonStr = monday.getDate().toString().padStart(2, '0') + "/" + 
-                                         (monday.getMonth() + 1).toString().padStart(2, '0') + "/" + 
-                                         monday.getFullYear();
-
-                    // 3. Nếu tìm thấy tuần khớp với hôm nay thì chọn, không thì chọn tuần cuối cùng (mới nhất)
+                    // Chốt tuần hiện tại
                     if (res.weeks.includes(currentMonStr)) {
                         selector.value = currentMonStr;
                     } else {
                         selector.selectedIndex = selector.options.length - 1;
+                        if (selector.value !== currentMonStr) {
+                            loadCurrentSchedule(); // Phải tải lại nếu tuần không khớp
+                            return;
+                        }
                     }
 
-                    // 4. Load lịch của tuần đã chọn
-                    loadCurrentSchedule();
+                    // TỰ ĐỘNG ĐIỀN LỊCH VỪA LẤY ĐƯỢC LÊN GIAO DIỆN LUÔN
+                    const sched = res.schedule; 
+                    dayIds.forEach((id, index) => {
+                        const cb = document.getElementById(id + '_check'); const inp = document.getElementById(id + '_tiet');
+                        if (sched[index] && sched[index] !== "") { 
+                            cb.checked = true; cb.disabled = true; cb.parentElement.style.opacity = "0.7"; 
+                            inp.style.display = "block"; inp.value = sched[index]; inp.disabled = false; 
+                        } else {
+                            cb.checked = false; cb.disabled = false; cb.parentElement.style.opacity = "1"; 
+                            inp.value = ""; inp.style.display = "none"; inp.disabled = false;
+                        }
+                    });
+                    btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
                 }
+            }).catch(e => { 
+                selector.innerHTML = "<option value=''>Lỗi mạng</option>"; 
+                btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; 
             });
         }
 
