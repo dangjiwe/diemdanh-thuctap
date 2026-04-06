@@ -217,7 +217,7 @@
         }
 
         // ===============================================
-        // TẢI MENU DỰ GIỜ - TỰ ĐỘNG CHỌN TUẦN MỚI NHẤT
+        // TẢI MENU DỰ GIỜ - TỰ ĐỘNG CHỌN ĐÚNG TUẦN (Đã fix lỗi nhảy sang tuần cuối)
         // ===============================================
         function loadDuGioWeeks() {
             const selDuGio = document.getElementById('dugio-week-selector');
@@ -227,14 +227,34 @@
             .then(r => r.json()).then(res => {
                 if(res.status === 'success') {
                     let opts = "<option value=''>-- Chọn tuần --</option>"; 
-                    res.weeks.forEach(w => { opts += `<option value="${w}">${w}</option>`; });
-                    selDuGio.innerHTML = opts; 
+                    
+                    // 1. Tính ngày Thứ Hai của tuần hiện tại
+                    const now = new Date();
+                    const day = now.getDay();
+                    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+                    const monday = new Date(now.setDate(diff));
+                    
+                    // 2. Tạo chuỗi ngày để dò (Ví dụ: "6/4" hoặc "06/04")
+                    const d1 = monday.getDate() + "/" + (monday.getMonth() + 1);
+                    const d2 = monday.getDate().toString().padStart(2, '0') + "/" + (monday.getMonth() + 1).toString().padStart(2, '0');
+                    
+                    let foundIndex = 0; // Mặc định ở "-- Chọn tuần --"
 
-                    // Tự động chọn cái Tuần cuối cùng trong danh sách (thường là tuần mới nhất cần báo cáo)
-                    if (selDuGio.options.length > 1) {
-                        selDuGio.selectedIndex = selDuGio.options.length - 1;
-                    }
-                    fetchDuGioValue();
+                    // 3. Quét danh sách các tuần lấy từ Sheet
+                    res.weeks.forEach((w, index) => { 
+                        opts += `<option value="${w}">${w}</option>`; 
+                        
+                        // Nếu tiêu đề "TUẦN X (6/4 - ...)" có chứa chữ "6/4" hoặc "06/04" thì lụm ngay!
+                        if (w.includes(d1) || w.includes(d2)) {
+                            foundIndex = index + 1; 
+                        }
+                    });
+                    
+                    selDuGio.innerHTML = opts; 
+                    selDuGio.selectedIndex = foundIndex; // Ép nó nhảy đúng vào tuần hiện tại
+                    
+                    // Nếu tìm thấy tuần thì tự động tải dữ liệu 3 cột ra
+                    if(foundIndex !== 0) fetchDuGioValue();
                 }
             });
         }
