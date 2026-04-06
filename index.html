@@ -174,16 +174,69 @@
         function handleCredentialResponse(response) { currentGoogleEmail = decodeJwtResponse(response.credential).email; localStorage.setItem('student_email', currentGoogleEmail); showMainApp(currentGoogleEmail); }
         function logoutGoogle() { if(confirm("Đăng xuất?")) { localStorage.removeItem('student_email'); localStorage.removeItem('student_name'); window.location.reload(); } }
 
+        // ===============================================
+        // TẢI MENU TUẦN - TỰ ĐỘNG CHỌN TUẦN HIỆN TẠI
+        // ===============================================
         function loadWeekOptions() {
-            const selector = document.getElementById('week-selector'); if(selector.options.length > 0) return; selector.innerHTML = "<option value=''>⌛ Đang tải...</option>";
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) }).then(r => r.json()).then(res => {
-                if(res.status === 'success') { selector.innerHTML = ""; res.weeks.forEach(w => { let opt = document.createElement('option'); opt.value = w; opt.innerText = "Tuần từ: " + w; selector.appendChild(opt); }); loadCurrentSchedule(); }
+            const selector = document.getElementById('week-selector');
+            selector.innerHTML = "<option value=''>⌛ Đang tải...</option>";
+            
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_weeks" }) })
+            .then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    selector.innerHTML = "";
+                    if (res.weeks.length === 0) { selector.innerHTML = "<option value=''>Chưa có dữ liệu</option>"; return; }
+                    
+                    // 1. Tạo danh sách option
+                    res.weeks.forEach(w => {
+                        let opt = document.createElement('option');
+                        opt.value = w; opt.innerText = "Tuần từ: " + w;
+                        selector.appendChild(opt);
+                    });
+
+                    // 2. TỰ ĐỘNG TÌM TUẦN HIỆN TẠI (Thứ 2 tuần này)
+                    const now = new Date();
+                    const day = now.getDay();
+                    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+                    const monday = new Date(now.setDate(diff));
+                    const currentMonStr = monday.getDate().toString().padStart(2, '0') + "/" + 
+                                         (monday.getMonth() + 1).toString().padStart(2, '0') + "/" + 
+                                         monday.getFullYear();
+
+                    // 3. Nếu tìm thấy tuần khớp với hôm nay thì chọn, không thì chọn tuần cuối cùng (mới nhất)
+                    if (res.weeks.includes(currentMonStr)) {
+                        selector.value = currentMonStr;
+                    } else {
+                        selector.selectedIndex = selector.options.length - 1;
+                    }
+
+                    // 4. Load lịch của tuần đã chọn
+                    loadCurrentSchedule();
+                }
             });
         }
 
+        // ===============================================
+        // TẢI MENU DỰ GIỜ - TỰ ĐỘNG CHỌN TUẦN MỚI NHẤT
+        // ===============================================
         function loadDuGioWeeks() {
-            const selDuGio = document.getElementById('dugio-week-selector'); if (selDuGio.options.length > 0) return; selDuGio.innerHTML = "<option value=''>⌛ Đang tải...</option>";
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data" }) }).then(r => r.json()).then(res => { if(res.status === 'success') { let opts = "<option value=''>-- Chọn tuần --</option>"; res.weeks.forEach(w => { opts += `<option value="${w}">${w}</option>`; }); selDuGio.innerHTML = opts; } });
+            const selDuGio = document.getElementById('dugio-week-selector');
+            selDuGio.innerHTML = "<option value=''>⌛ Đang tải...</option>";
+            
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data" }) })
+            .then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    let opts = "<option value=''>-- Chọn tuần --</option>"; 
+                    res.weeks.forEach(w => { opts += `<option value="${w}">${w}</option>`; });
+                    selDuGio.innerHTML = opts; 
+
+                    // Tự động chọn cái Tuần cuối cùng trong danh sách (thường là tuần mới nhất cần báo cáo)
+                    if (selDuGio.options.length > 1) {
+                        selDuGio.selectedIndex = selDuGio.options.length - 1;
+                    }
+                    fetchDuGioValue();
+                }
+            });
         }
 
         // ĐỊNH NGHĨA EVENT CHO CHECKBOX HIỆN Ô TIẾT
@@ -194,11 +247,13 @@
         });
 
         // ===============================================
-        // LOGIC TẢI LỊCH: KHÓA NGÀY - CHO SỬA TIẾT
+        // LOGIC TẢI LỊCH (Đã fix lỗi Race Condition)
         // ===============================================
         function loadCurrentSchedule() {
-            const hoTen = document.getElementById('hoTen').value; const week = document.getElementById('week-selector').value;
+            const hoTen = document.getElementById('hoTen').value; 
+            const week = document.getElementById('week-selector').value;
             if (!hoTen || document.getElementById('schedule-panel').style.display === 'none' || !week) return; 
+            
             const btnSave = document.getElementById('save-schedule-btn');
             
             dayIds.forEach(id => {
@@ -208,7 +263,16 @@
             });
 
             btnSave.innerText = "⏳ Đang tải..."; btnSave.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week }) }).then(r => r.json()).then(res => {
+            
+            // LƯU LẠI CÁI TUẦN ĐANG ĐƯỢC YÊU CẦU
+            const fetchingWeek = week;
+
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_schedule", hoTen: hoTen, week: week }) })
+            .then(r => r.json()).then(res => {
+                
+                // KIỂM TRA CHÉO: Nếu dữ liệu về mà tuần trên màn hình đã bị đổi thì VỨT BỎ kết quả này
+                if (document.getElementById('week-selector').value !== fetchingWeek) return;
+
                 btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false;
                 if(res.status === 'success') {
                     const sched = res.schedule; 
@@ -224,18 +288,49 @@
                         }
                     });
                 }
+            }).catch(() => { 
+                if (document.getElementById('week-selector').value === fetchingWeek) {
+                    btnSave.innerText = "💾 Lưu lịch tuần này"; btnSave.disabled = false; 
+                }
             });
         }
 
+        // ===============================================
+        // LOGIC TẢI THỐNG KÊ DỰ GIỜ (Đã fix lỗi Race Condition)
+        // ===============================================
         function fetchDuGioValue() {
-            const hoTen = document.getElementById('hoTen').value; const weekLabel = document.getElementById('dugio-week-selector').value;
-            const iShcn = document.getElementById('input-shcn'); const iHdgd = document.getElementById('input-hdgd'); const iDugio = document.getElementById('input-dugio');
-            if (!hoTen || !weekLabel || document.getElementById('dugio-panel').style.display === 'none') { iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; return; }
-            iShcn.value = "⏳..."; iHdgd.value = "⏳..."; iDugio.value = "⏳..."; iShcn.disabled = true; iHdgd.disabled = true; iDugio.disabled = true;
-            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data", hoTen: hoTen, weekLabel: weekLabel }) }).then(r => r.json()).then(res => {
+            const hoTen = document.getElementById('hoTen').value; 
+            const weekLabel = document.getElementById('dugio-week-selector').value;
+            const iShcn = document.getElementById('input-shcn'); 
+            const iHdgd = document.getElementById('input-hdgd'); 
+            const iDugio = document.getElementById('input-dugio');
+
+            if (!hoTen || !weekLabel || document.getElementById('dugio-panel').style.display === 'none') { 
+                iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; return; 
+            }
+            
+            iShcn.value = "⏳..."; iHdgd.value = "⏳..."; iDugio.value = "⏳..."; 
+            iShcn.disabled = true; iHdgd.disabled = true; iDugio.disabled = true;
+
+            // LƯU LẠI CÁI TUẦN ĐANG ĐƯỢC YÊU CẦU
+            const fetchingWeek = weekLabel;
+
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "get_dugio_data", hoTen: hoTen, weekLabel: weekLabel }) })
+            .then(r => r.json()).then(res => {
+                
+                // KIỂM TRA CHÉO
+                if (document.getElementById('dugio-week-selector').value !== fetchingWeek) return;
+
                 iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false;
-                if(res.status === 'success') { iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio; }
+                if(res.status === 'success') { 
+                    iShcn.value = res.shcn; iHdgd.value = res.hdgd; iDugio.value = res.dugio; 
+                }
                 else { iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; }
+            }).catch(() => { 
+                if (document.getElementById('dugio-week-selector').value === fetchingWeek) {
+                    iShcn.disabled = false; iHdgd.disabled = false; iDugio.disabled = false; 
+                    iShcn.value = ""; iHdgd.value = ""; iDugio.value = ""; 
+                }
             });
         }
 
